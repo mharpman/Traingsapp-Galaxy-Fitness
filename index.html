@@ -1,0 +1,1169 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Trainingsplan Galaxy Fitness</title>
+<style>
+  :root {
+    --font-sans: 'Inter', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+
+    --c-basis:   #1F2933;
+    --c-akzent:  #1B5E8C;
+    --c-signal:  #D98032;
+    --c-muskel:  #C8443A;  /* Ausnahme vom "kein Rot"-Grundsatz: funktionale Muskel-Markierung, keine Marken-Akzentfarbe */
+    --c-koerper: #2A2E33;  /* Koerper-Silhouette Light-Mode: dunkel auf hell */
+
+    --n-weiss:   #FFFFFF;
+    --n-flaeche: #F7F8F9;
+    --n-linie:   #E4E7EB;
+    --n-grau:    #7B8794;
+
+    --radius: 4px;
+
+    --bg: var(--n-weiss);
+    --bg-karte: var(--n-weiss);
+    --bg-flaeche: var(--n-flaeche);
+    --text: var(--c-basis);
+    --text-grau: var(--n-grau);
+    --linie: var(--n-linie);
+    --akzent: var(--c-akzent);
+    --signal: var(--c-signal);
+    --muskel-aktiv: var(--c-muskel);
+    --muskel-sekundaer: rgba(200,68,58,.5);
+    --koerper-fill: var(--c-koerper);
+    --tab-inaktiv: var(--n-grau);
+    --input-bg: var(--n-weiss);
+    --erledigt-bg: #EAF3EC;
+    --erledigt-text: #2F6B3A;
+    --timerbar-bg: var(--c-basis);
+    --timerbar-text: #FFFFFF;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #14181C; --bg-karte: #1C2228; --bg-flaeche: #20262D;
+      --text: #F2F4F6; --text-grau: #9AA5B1; --linie: #2C333B;
+      --akzent: #5CA8DE; --signal: #E69A54;
+      --muskel-aktiv: #E1594E; --muskel-sekundaer: rgba(225,89,78,.5); --koerper-fill: #C7CCD2;
+      --tab-inaktiv: #6B7680; --input-bg: #262D35;
+      --erledigt-bg: #1E2F22; --erledigt-text: #7FCB8F;
+      --timerbar-bg: #0E1114; --timerbar-text: #F2F4F6;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #14181C; --bg-karte: #1C2228; --bg-flaeche: #20262D;
+    --text: #F2F4F6; --text-grau: #9AA5B1; --linie: #2C333B;
+    --akzent: #5CA8DE; --signal: #E69A54;
+    --muskel-aktiv: #E1594E; --muskel-sekundaer: rgba(225,89,78,.5); --koerper-fill: #C7CCD2;
+    --tab-inaktiv: #6B7680; --input-bg: #262D35;
+    --erledigt-bg: #1E2F22; --erledigt-text: #7FCB8F;
+    --timerbar-bg: #0E1114; --timerbar-text: #F2F4F6;
+  }
+
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: var(--font-sans); font-size: 16px; line-height: 1.45;
+    max-width: 520px; margin: 0 auto; padding: 14px 14px 90px;
+  }
+
+  h1 { margin: 2px 0 2px; font-size: 21px; font-weight: 700; color: var(--text); text-align: left; }
+  .app-sub { margin: 0 0 14px; font-size: 13px; color: var(--text-grau); }
+
+  .tabs { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 12px; -webkit-overflow-scrolling: touch; }
+  .tab {
+    flex: 0 0 auto; padding: 9px 14px; border-radius: var(--radius);
+    border: 1px solid var(--linie); background: var(--bg-karte); color: var(--tab-inaktiv);
+    font-family: var(--font-sans); font-size: 14px; font-weight: 600; cursor: pointer;
+  }
+  .tab.active { color: var(--n-weiss); background: var(--akzent); border-color: var(--akzent); }
+
+  .day-focus { font-size: 13px; color: var(--text-grau); margin: 0 0 4px; }
+  .kernprogramm-hinweis { font-size: 12px; color: var(--text-grau); margin: 0 0 14px; font-style: italic; }
+
+  .section-label {
+    font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
+    color: var(--text-grau); margin: 18px 0 8px;
+  }
+
+  .ex-card { background: var(--bg-karte); border: 1px solid var(--linie); border-radius: var(--radius); margin-bottom: 10px; overflow: hidden; }
+  .ex-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 14px; cursor: pointer; }
+  .ex-head-left { min-width: 0; flex: 1; }
+  .ex-name { font-size: 15px; font-weight: 700; color: var(--text); }
+  .ex-name .opt-badge {
+    font-size: 10px; font-weight: 700; color: var(--text-grau); border: 1px solid var(--linie);
+    border-radius: var(--radius); padding: 1px 5px; margin-left: 6px; vertical-align: middle;
+    text-transform: uppercase; letter-spacing: .03em;
+  }
+  .ex-meta { font-size: 12.5px; color: var(--text-grau); margin-top: 2px; }
+  .ex-chevron { font-size: 13px; color: var(--text-grau); flex-shrink: 0; transition: transform .15s ease; }
+  .ex-card.open .ex-chevron { transform: rotate(90deg); }
+  .ex-progress-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--linie); }
+  .ex-progress-dot.done { background: var(--erledigt-text); }
+
+  .ex-body { display: none; padding: 0 14px 14px; }
+  .ex-card.open .ex-body { display: block; }
+
+  .ex-top-row { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 8px; }
+  .muscle-diagram { flex: 0 0 auto; width: 78px; }
+  .muscle-diagram svg { width: 78px; height: auto; display: block; }
+  .muscle-caption { font-size: 10px; color: var(--text-grau); text-align: center; margin-top: 2px; }
+
+  .cues { margin: 6px 0 10px; padding: 0; list-style: none; flex: 1; min-width: 0; }
+  .cues li { position: relative; padding-left: 20px; margin-bottom: 6px; font-size: 13.5px; color: var(--text); }
+  .cues li::before { content: "⇒"; position: absolute; left: 0; top: 0; color: var(--akzent); font-weight: 700; }
+
+  .video-link {
+    display: inline-block; font-size: 13px; font-weight: 600; color: var(--akzent); text-decoration: none;
+    border: 1px solid var(--akzent); border-radius: var(--radius); padding: 6px 10px; margin-bottom: 12px;
+  }
+  .offen-note { font-size: 12px; color: var(--text-grau); font-style: italic; margin: -4px 0 10px; }
+
+  .sets-table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
+  .sets-table th {
+    font-size: 11px; font-weight: 700; color: var(--text-grau); text-transform: uppercase; letter-spacing: .03em;
+    text-align: left; padding: 4px 4px 6px; border-bottom: 1px solid var(--linie);
+  }
+  .sets-table td { padding: 5px 4px; vertical-align: middle; }
+  .set-row.done { background: var(--erledigt-bg); }
+  .set-num { font-size: 13px; font-weight: 700; color: var(--text-grau); width: 22px; }
+  .set-input {
+    width: 100%; max-width: 62px; font-family: var(--font-sans); font-size: 15px; padding: 6px 4px;
+    border: 1px solid var(--linie); border-radius: var(--radius); background: var(--input-bg); color: var(--text);
+    text-align: center;
+  }
+  .set-check {
+    width: 34px; height: 34px; border-radius: var(--radius); border: 1px solid var(--linie);
+    background: var(--bg-karte); color: var(--text-grau); font-size: 16px; cursor: pointer;
+  }
+  .set-row.done .set-check { background: var(--erledigt-text); border-color: var(--erledigt-text); color: var(--n-weiss); }
+
+  .ex-actions { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+  .btn {
+    font-family: var(--font-sans); font-size: 13.5px; font-weight: 600; padding: 9px 12px;
+    border-radius: var(--radius); border: 1px solid var(--linie); background: var(--bg-flaeche); color: var(--text);
+    cursor: pointer;
+  }
+  .btn.primary { background: var(--akzent); border-color: var(--akzent); color: var(--n-weiss); }
+
+  .verlauf-box { margin-top: 10px; border-top: 1px solid var(--linie); padding-top: 10px; display: none; }
+  .verlauf-box.show { display: block; }
+  .verlauf-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  .verlauf-table th { text-align: left; color: var(--text-grau); font-weight: 700; padding: 3px 4px; border-bottom: 1px solid var(--linie); }
+  .verlauf-table td { padding: 3px 4px; color: var(--text); }
+  .verlauf-empty { font-size: 12.5px; color: var(--text-grau); font-style: italic; }
+
+  /* Pausen-Leiste unten, nicht blockierend */
+  .timer-bar {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 40;
+    background: var(--timerbar-bg); color: var(--timerbar-text);
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 14px calc(10px + env(safe-area-inset-bottom, 0px));
+    transform: translateY(110%); transition: transform .2s ease;
+    box-shadow: 0 -2px 10px rgba(0,0,0,.15);
+  }
+  .timer-bar.show { transform: translateY(0); }
+  .timer-bar.done { background: var(--signal); }
+  .timer-bar-name { flex: 1; min-width: 0; font-size: 12.5px; opacity: .8; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .timer-bar-num { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; flex-shrink: 0; }
+  .timer-bar-btn {
+    flex-shrink: 0; font-family: var(--font-sans); font-size: 12.5px; font-weight: 600;
+    padding: 7px 10px; border-radius: var(--radius); border: 1px solid rgba(255,255,255,.3);
+    background: transparent; color: inherit; cursor: pointer;
+  }
+
+  .footer-note { margin-top: 26px; font-size: 11.5px; color: var(--text-grau); text-align: left; border-top: 1px solid var(--linie); padding-top: 10px; }
+
+  .watch-card { background: var(--bg-karte); border: 1px solid var(--linie); border-radius: var(--radius); margin-bottom: 14px; overflow: hidden; }
+  .watch-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 14px; cursor: pointer; }
+  .watch-title { font-size: 14px; font-weight: 700; color: var(--text); }
+  .watch-sub { font-size: 12px; color: var(--text-grau); margin-top: 1px; }
+  .watch-body { display: none; padding: 0 14px 14px; }
+  .watch-card.open .watch-body { display: block; }
+  .watch-card.open .ex-chevron { transform: rotate(90deg); }
+  .watch-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 10px; margin-bottom: 10px; }
+  .watch-field label { display: block; font-size: 11px; color: var(--text-grau); margin-bottom: 3px; }
+  .watch-field input { width: 100%; font-family: var(--font-sans); font-size: 14px; padding: 7px 8px; border: 1px solid var(--linie); border-radius: var(--radius); background: var(--input-bg); color: var(--text); }
+  .watch-saved-note { font-size: 12px; color: var(--erledigt-text); margin-top: 6px; display: none; }
+  .watch-saved-note.show { display: block; }
+
+  .ausw-card { background: var(--bg-karte); border: 1px solid var(--linie); border-radius: var(--radius); margin-bottom: 10px; padding: 12px 14px; }
+  .ausw-ex-name { font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+  .ausw-empty { font-size: 13px; color: var(--text-grau); font-style: italic; }
+  .backup-textarea {
+    width: 100%; min-height: 70px; font-family: var(--font-sans); font-size: 11.5px;
+    padding: 8px; border: 1px solid var(--linie); border-radius: var(--radius);
+    background: var(--input-bg); color: var(--text); resize: vertical; margin-bottom: 8px;
+  }
+  .backup-note { font-size: 11.5px; color: var(--text-grau); margin-top: 6px; }
+  .backup-note.ok { color: var(--erledigt-text); }
+  .backup-note.err { color: var(--muskel-aktiv); }
+</style>
+</head>
+<body>
+<h1>Trainingsplan Hypertrophie</h1>
+<p class="app-sub">Galaxy Fitness · 4×/Woche Upper/Lower-Split · v0.3</p>
+
+<div class="tabs" id="tabs"></div>
+<p class="day-focus" id="dayFocus"></p>
+<p class="kernprogramm-hinweis" id="dayKern"></p>
+
+<div class="watch-card" id="watchCard">
+  <div class="watch-head" id="watchHead">
+    <div>
+      <div class="watch-title">⌚ Watch-Daten (manuell)</div>
+      <div class="watch-sub" id="watchSub">Dauer, Kalorien, Ø-Herzfrequenz für heute eintragen</div>
+    </div>
+    <div class="ex-chevron">▶</div>
+  </div>
+  <div class="watch-body">
+    <div class="watch-grid">
+      <div class="watch-field"><label for="wDauer">Dauer (hh:mm)</label><input type="text" id="wDauer" inputmode="numeric" placeholder="1:05"></div>
+      <div class="watch-field"><label for="wHf">Ø Herzfrequenz (bpm)</label><input type="text" id="wHf" inputmode="numeric" placeholder="107"></div>
+      <div class="watch-field"><label for="wKcalAktiv">Aktive kcal</label><input type="text" id="wKcalAktiv" inputmode="numeric" placeholder="332"></div>
+      <div class="watch-field"><label for="wKcalGesamt">Gesamt kcal</label><input type="text" id="wKcalGesamt" inputmode="numeric" placeholder="443"></div>
+    </div>
+    <button class="btn primary" id="wSaveBtn">Speichern</button>
+    <div class="watch-saved-note" id="wSavedNote">✓ Gespeichert für heute.</div>
+    <div id="watchHistory"></div>
+  </div>
+</div>
+
+<div id="exList"></div>
+
+<div class="footer-note">Gewichte/Wdh. und Verlauf werden lokal auf diesem Gerät gespeichert (Browser-Speicher) — nicht geteilt, nicht auf einem Server. Haken setzen sich täglich automatisch zurück, das zuletzt genutzte Gewicht bleibt beim ersten Satz als Vorschlag stehen. Muskel-Grafik ist schematisch, keine anatomische Genauigkeit.</div>
+
+<div class="timer-bar" id="timerBar">
+  <div class="timer-bar-name" id="timerBarName">Pause</div>
+  <div class="timer-bar-num" id="timerBarNum">90</div>
+  <button class="timer-bar-btn" id="timerBarMinus">−15s</button>
+  <button class="timer-bar-btn" id="timerBarClose">Fertig</button>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  // ---------- Koerper-Silhouette (schwarz/hell, theme-abhaengig) + rote Muskel-Markierung ----------
+  // Ausnahme vom "kein Rot"-Grundsatz: funktionale Muskel-Markierung, keine Marken-Akzentfarbe.
+  var BODY_SVG =
+    '<ellipse cx="70" cy="20" rx="13" ry="15" fill="var(--koerper-fill)"/>' +
+    '<path d="M 58,34 L 82,34 C 90,34 97,36 105,44 C 112,50 112,57 108,63 C 102,75 91,85 89,97 C 88,103 91,107 95,113 C 99,119 99,123 94,127 L 81,127 C 75,123 65,123 59,127 L 46,127 C 41,123 41,119 45,113 C 49,107 52,103 51,97 C 49,85 38,75 32,63 C 28,57 28,50 35,44 C 43,36 50,34 58,34 Z" fill="var(--koerper-fill)"/>' +
+    '<path d="M 99,47 C 106,44 114,45 119,52 C 123,59 123,67 120,77 C 118,87 116,95 114,105 C 112,113 111,121 111,131 C 111,139 112,145 116,151 C 119,155 118,160 113,162 C 109,163 106,161 105,157 L 104,147 C 102,137 101,127 100,117 C 99,107 97,97 96,87 C 95,77 94,67 94,59 C 94,54 96,50 99,47 Z" fill="var(--koerper-fill)"/>' +
+    '<path d="M 41,47 C 34,44 26,45 21,52 C 17,59 17,67 20,77 C 22,87 24,95 26,105 C 28,113 29,121 29,131 C 29,139 28,145 24,151 C 21,155 22,160 27,162 C 31,163 34,161 35,157 L 36,147 C 38,137 39,127 40,117 C 41,107 43,97 44,87 C 45,77 46,67 46,59 C 46,54 44,50 41,47 Z" fill="var(--koerper-fill)"/>' +
+    '<path d="M 94,127 C 95,135 95,141 95,149 C 94,165 92,179 89,191 C 88,197 88,201 88,207 C 87,217 86,225 85,235 C 84,241 84,245 86,249 C 89,252 93,253 96,254 L 96,258 L 69,258 L 69,252 C 71,248 72,244 72,237 C 72,227 73,217 73,207 C 73,201 72,197 71,191 C 69,179 67,165 67,149 C 67,141 67,135 69,127 L 81,127 Z" fill="var(--koerper-fill)"/>' +
+    '<path d="M 46,127 C 45,135 45,141 45,149 C 46,165 48,179 51,191 C 52,197 52,201 52,207 C 53,217 54,225 55,235 C 56,241 56,245 54,249 C 51,252 47,253 44,254 L 44,258 L 71,258 L 71,252 C 69,248 68,244 68,237 C 68,227 67,217 67,207 C 67,201 68,197 69,191 C 71,179 73,165 73,149 C 73,141 73,135 71,127 L 59,127 Z" fill="var(--koerper-fill)"/>';
+
+  // Highlight-Regionen sitzen ueber der Silhouette; inaktive Muskeln werden gar nicht gezeichnet
+  // (die Silhouette scheint dort einfach durch) — schematisch, keine anatomische Genauigkeit.
+  var REGIONS_FRONT = [
+    { id: "chest",                shape: "rect", x: 48, y: 45,  w: 44, h: 27, rx: 8 },
+    { id: "front-shoulder-right", shape: "circ", cx: 108, cy: 54, r: 10 },
+    { id: "front-shoulder-left",  shape: "circ", cx: 32,  cy: 54, r: 10 },
+    { id: "biceps-right",         shape: "rect", x: 97, y: 62,  w: 24, h: 38, rx: 9 },
+    { id: "biceps-left",          shape: "rect", x: 19, y: 62,  w: 24, h: 38, rx: 9 },
+    { id: "quad-right",           shape: "rect", x: 79, y: 132, w: 17, h: 58, rx: 8 },
+    { id: "quad-left",            shape: "rect", x: 44, y: 132, w: 17, h: 58, rx: 8 },
+    { id: "adductors",            shape: "rect", x: 61, y: 136, w: 18, h: 48, rx: 8 }
+  ];
+  var REGIONS_BACK = [
+    { id: "midback",              shape: "rect", x: 48, y: 44,  w: 44, h: 26, rx: 8 },
+    { id: "lats-right",           shape: "rect", x: 84, y: 58,  w: 22, h: 34, rx: 8 },
+    { id: "lats-left",            shape: "rect", x: 34, y: 58,  w: 22, h: 34, rx: 8 },
+    { id: "rearshoulder-right",   shape: "circ", cx: 108, cy: 54, r: 10 },
+    { id: "rearshoulder-left",    shape: "circ", cx: 32,  cy: 54, r: 10 },
+    { id: "triceps-right",        shape: "rect", x: 97, y: 62,  w: 24, h: 38, rx: 9 },
+    { id: "triceps-left",         shape: "rect", x: 19, y: 62,  w: 24, h: 38, rx: 9 },
+    { id: "lowerback",            shape: "rect", x: 59, y: 99,  w: 22, h: 20, rx: 7 },
+    { id: "glutes",               shape: "rect", x: 47, y: 112, w: 46, h: 19, rx: 9 },
+    { id: "glutemed-right",       shape: "circ", cx: 98, cy: 121, r: 9 },
+    { id: "glutemed-left",        shape: "circ", cx: 42, cy: 121, r: 9 },
+    { id: "hamstrings-right",     shape: "rect", x: 79, y: 132, w: 17, h: 58, rx: 8 },
+    { id: "hamstrings-left",      shape: "rect", x: 44, y: 132, w: 17, h: 58, rx: 8 },
+    { id: "calves-right",         shape: "rect", x: 81, y: 205, w: 15, h: 44, rx: 7 },
+    { id: "calves-left",          shape: "rect", x: 44, y: 205, w: 15, h: 44, rx: 7 }
+  ];
+
+  function buildMuscleSVG(view, primary, secondary) {
+    primary = primary || []; secondary = secondary || [];
+    var regions = view === "back" ? REGIONS_BACK : REGIONS_FRONT;
+    var parts = ['<svg viewBox="0 0 140 260" xmlns="http://www.w3.org/2000/svg">', BODY_SVG];
+    regions.forEach(function (r) {
+      var fill = null;
+      if (primary.indexOf(r.id) !== -1) fill = "var(--muskel-aktiv)";
+      else if (secondary.indexOf(r.id) !== -1) fill = "var(--muskel-sekundaer)";
+      if (!fill) return;
+      if (r.shape === "rect") {
+        parts.push('<rect x="' + r.x + '" y="' + r.y + '" width="' + r.w + '" height="' + r.h + '" rx="' + r.rx + '" fill="' + fill + '"/>');
+      } else {
+        parts.push('<circle cx="' + r.cx + '" cy="' + r.cy + '" r="' + r.r + '" fill="' + fill + '"/>');
+      }
+    });
+    parts.push("</svg>");
+    return parts.join("");
+  }
+
+  // ---------- Trainingsplan-Daten ----------
+  var PLAN = {
+    upperA: {
+      label: "Upper A",
+      focus: "Bankdrücken-Fokus",
+      exercises: [
+        { id: "ua1", name: "Bankdrücken Langhantel", reps: "6–10", rir: "1–2", restSec: 150, restLabel: "2–3 Min.", sets: 3,
+          muscle: { view: "front", primary: ["chest"], secondary: ["front-shoulder-left", "front-shoulder-right"] },
+          cues: [
+            "Leichte Bogenspannung im oberen Rücken: Schulterblätter zusammenziehen und auf die Bank „packen“, Gesäß bleibt unten.",
+            "Ellbogen im Ablassen ca. 45° zum Körper — nicht 90° (Schulterbelastung) und nicht eng am Körper (weniger Brust).",
+            "Griffbreite ca. 1,5× Schulterbreite.",
+            "Stange nicht nur nach oben, sondern leicht nach hinten Richtung Kopf drücken — die Bahn ist eine flache J-Kurve, kein reiner Vertikalstoß.",
+            "Sanfter, kontrollierter Kontakt am unteren Brustbereich, nicht abprallen lassen; beim Pressen aktiv mit den Füßen in den Boden drücken."
+          ],
+          video: "https://www.youtube.com/watch?v=vcBig73ojpE", videoLabel: "How To Get A Huge Bench Press — Jeff Nippard" },
+        { id: "ua2", name: "Rudern sitzend, Kabel, breiter Griff", reps: "8–12", rir: "1–2", restSec: 90, restLabel: "90 Sek.", sets: 3,
+          muscle: { view: "back", primary: ["lats-left", "lats-right", "midback"], secondary: [] },
+          cues: [
+            "Torso fixiert und aufrecht halten — Zug nicht durch Rückwärtsschwung des Oberkörpers erzeugen.",
+            "Zug einleiten, indem die Schulterblätter zusammengezogen werden, erst danach die Arme/Ellbogen nachziehen.",
+            "Ellbogen nah am Körper führen, am Endpunkt kurz die Schulterblätter zusammenpressen.",
+            "Kontrollierte Rückführung bis zur vollen Vordehnung, keine Hektik am Umkehrpunkt."
+          ],
+          video: "https://www.youtube.com/watch?v=SpJwyAbwDBk&t=508s", videoLabel: "Kabelzug-Rudern & Trapez-Isolation ab 8:30 — Jeff Nippard (Kapitelmarke, kein eigenes Video)" },
+        { id: "ua3", name: "Schulterdrücken Kurzhantel, sitzend", reps: "8–12", rir: "1–2", restSec: 90, restLabel: "90 Sek.", sets: 3,
+          muscle: { view: "front", primary: ["front-shoulder-left", "front-shoulder-right"], secondary: [] },
+          cues: [
+            "Nicht bis ganz unten drücken — bis auf Mundhöhe reicht; tiefer verlagert den Reiz zu stark auf die obere Brust.",
+            "Kurzhanteln sauber über den Schultern führen, Handgelenke gerade halten.",
+            "Oben Ellbogen nicht komplett durchdrücken/verriegeln — Spannung auf der Schulter halten.",
+            "Bauchspannung halten, kein übermäßiges Hohlkreuz."
+          ],
+          video: "https://www.youtube.com/watch?v=YPGhS1LjjRo", videoLabel: "Build Bigger Shoulders — Jeff Nippard" },
+        { id: "ua4", name: "Latzug eng, Untergriff", reps: "8–12", rir: "1–2", restSec: 90, restLabel: "90 Sek.", sets: 3,
+          muscle: { view: "back", primary: ["lats-left", "lats-right"], secondary: [] },
+          cues: [
+            "Ellbogen eng am Körper, Zug bis der Oberarm senkrecht zum Boden steht — Richtung Hüfte ziehen, nicht hinter den Torso.",
+            "Oberkörper aufrecht halten statt weit zurückzulehnen.",
+            "Cable und Unterarm möglichst in einer Linie halten, volle Dehnung oben, Exzentrik bewusst abbremsen."
+          ],
+          video: "https://www.youtube.com/shorts/5Hjhg43P5vE", videoLabel: "Jeff Nippard FIXED my lat pulldowns" },
+        { id: "ua5", name: "Seitheben Kabel, Super-ROM (gedehnt)", reps: "12–20", rir: "0–1", restSec: 60, restLabel: "60 Sek.", sets: 3,
+          muscle: { view: "front", primary: ["front-shoulder-left", "front-shoulder-right"], secondary: [] },
+          cues: [
+            "Arme so gestreckt wie im Schulter-/Ellbogengelenk angenehm möglich, Winkel über alle Sätze konstant halten.",
+            "Bewegung aus der Schulter, nicht schwingen.",
+            "Bis knapp über Schulterhöhe oder leicht darüber führen.",
+            "Exzentrik aktiv kontrollieren."
+          ],
+          video: "https://youtu.be/21lYP86dHW4", videoLabel: "Top 3 Shoulder Exercises for 3D Delts — Nippard & Israetel" },
+        { id: "ua6", name: "Bizeps-Curl Kurzhantel, Schrägbank (gedehnt)", reps: "10–15", rir: "0–1", restSec: 60, restLabel: "60 Sek.", sets: 2, optional: true,
+          muscle: { view: "front", primary: ["biceps-left", "biceps-right"], secondary: [] },
+          cues: [
+            "Bank auf 45–60° einstellen, Arme hängen im Startpunkt komplett gestreckt hinter dem Körper — das ist die gedehnte Position.",
+            "Ellbogen während der ganzen Bewegung an Ort und Stelle lassen, nicht nach vorne wandern.",
+            "Unten bewusst 1–2 Sekunden in der Dehnung verweilen — das ist bei dieser Variante der Hauptreiz."
+          ],
+          video: "https://www.youtube.com/shorts/FMte2pcjOXY", videoLabel: "Jeff Nippard: bestes wissenschaftsbasiertes Bizeps-Exercise" },
+        { id: "ua7", name: "Trizeps-Seilzug über Kopf (gedehnt)", reps: "10–15", rir: "0–1", restSec: 60, restLabel: "60 Sek.", sets: 2, optional: true,
+          muscle: { view: "back", primary: ["triceps-left", "triceps-right"], secondary: [] },
+          cues: [
+            "Ellbogen eng am Kopf fixiert, zeigen während der ganzen Bewegung nach vorne oben.",
+            "Volle Dehnung hinter dem Kopf zulassen — das ist bei dieser Variante der Hauptreiz.",
+            "Nur den Unterarm bewegen, Oberarm bleibt ruhig."
+          ],
+          video: "https://www.youtube.com/watch?v=HsV4wDUxdow", videoLabel: "Jeff Nippard: wissenschaftsbasiertes Arm-Workout" }
+      ]
+    },
+    lowerA: {
+      label: "Lower A",
+      focus: "Kniebeuge-Fokus, Quadrizeps",
+      exercises: [
+        { id: "la1", name: "Kniebeuge Langhantel", reps: "6–10", rir: "1–2", restSec: 150, restLabel: "2–3 Min.", sets: 3,
+          muscle: { view: "front", primary: ["quad-left", "quad-right"], secondary: [] },
+          cues: [
+            "High-Bar: Stange auf dem oberen Trapez ablegen — hält den Fokus auf dem Quadrizeps.",
+            "Stand knapp außerhalb Schulterbreite, Zehen leicht ausgedreht.",
+            "Mind. bis zur Parallele absteigen — etwas tiefer schadet nicht, deutlich flacher schon.",
+            "Stange in gerader Linie über der Fußmitte führen.",
+            "Aus dem Rack nur so viele Schritte wie nötig (max. drei)."
+          ],
+          video: "https://www.youtube.com/watch?v=bEv6CCg2BC8", videoLabel: "How To Get A Huge Squat — Jeff Nippard" },
+        { id: "la2", name: "Rumänisches Kreuzheben, Langhantel", reps: "8–12", rir: "1–2", restSec: 120, restLabel: "2 Min.", sets: 3,
+          muscle: { view: "back", primary: ["hamstrings-left", "hamstrings-right", "glutes"], secondary: ["lowerback"] },
+          cues: [
+            "Knie nur leicht gebeugt und über den ganzen Satz konstant halten.",
+            "Hüfte weit nach hinten schieben, Stange bleibt eng am Bein.",
+            "Bewegungsende dort, wo der Rücken noch neutral bleibt — nicht bis zum Boden erzwingen.",
+            "Die spürbare Spannung im Beinbizeps ist das Stopp-Signal, nicht eine feste Wiederholungszahl."
+          ],
+          video: "https://www.youtube.com/watch?v=Q5vwsJFwhyg", videoLabel: "HOW TO DO ROMANIAN DEADLIFTS — Jeff Nippard" },
+        { id: "la3", name: "Beinpresse", reps: "10–15", rir: "1–2", restSec: 90, restLabel: "90 Sek.", sets: 2,
+          muscle: { view: "front", primary: ["quad-left", "quad-right"], secondary: [] },
+          cues: [
+            "Enge Fußstellung auf der Platte für mehr Quadrizeps-Fokus.",
+            "Volle Tiefe zulassen, solange der untere Rücken flach auf der Auflage bleibt.",
+            "Oben leichte Kniebeugung behalten statt durchzudrücken."
+          ],
+          offenNote: "Offen: kein einzeln verifiziertes Kurzvideo gefunden — die Übung steckt in einem 11-Min.-Sammelvideo ohne verifizierbaren Timestamp. Im Studio zeigen lassen.",
+          video: "", videoLabel: "" },
+        { id: "la4", name: "Beinstrecker, langsame Exzentrik", reps: "10–15", rir: "0–1", restSec: 60, restLabel: "60 Sek.", sets: 2,
+          muscle: { view: "front", primary: ["quad-left", "quad-right"], secondary: [] },
+          cues: [
+            "Rückenlehne so einstellen, dass die Knie exakt mit dem Drehpunkt der Maschine fluchten.",
+            "Zehen nach oben zeigen lassen.",
+            "Unteren Rücken und Gesäß fest gegen die Polster drücken.",
+            "Exzentrik bewusst über 2–3 Sekunden abbremsen."
+          ],
+          offenNote: "Offen: kein einzeln verifiziertes Kurzvideo gefunden — steckt im selben 11-Min.-Sammelvideo ohne verifizierbaren Timestamp. Im Studio zeigen lassen.",
+          video: "", videoLabel: "" },
+        { id: "la5", name: "Wadenheben stehend", reps: "10–15", rir: "0–1", restSec: 60, restLabel: "60 Sek.", sets: 3,
+          muscle: { view: "back", primary: ["calves-left", "calves-right"], secondary: [] },
+          cues: [
+            "Volle Dehnung unten zulassen, Ferse spürbar unter die Stufenkante sinken lassen.",
+            "Oben kurze, bewusste Kontraktion halten — keine ruckartigen Wiederholungen."
+          ],
+          video: "https://www.youtube.com/watch?v=21inrjhoFkQ", videoLabel: "The Most Scientific Way to Train Calves — Jeff Nippard" },
+        { id: "la6", name: "Hüftabduktion, Maschine", reps: "15–20", rir: "0–1", restSec: 45, restLabel: "45 Sek.", sets: 2, optional: true,
+          muscle: { view: "back", primary: ["glutemed-left", "glutemed-right"], secondary: [] },
+          cues: [
+            "Rückenlehne und Sitzposition so einstellen, dass die Bewegung sauber aus der Hüfte kommt, nicht aus dem unteren Rücken.",
+            "Kontrollierte Rückführung, das Gewicht nicht einfach zurückfallen lassen."
+          ],
+          offenNote: "Offen: kein verifiziertes Einzelvideo gefunden. Im Studio zeigen lassen.",
+          video: "", videoLabel: "" }
+      ]
+    },
+    upperB: {
+      label: "Upper B",
+      focus: "Schrägbankdrücken-Fokus",
+      exercises: [
+        { id: "ub1", name: "Schrägbankdrücken Kurzhantel (30°)", reps: "8–12", rir: "1–2", restSec: 120, restLabel: "2 Min.", sets: 3,
+          muscle: { view: "front", primary: ["chest"], secondary: ["front-shoulder-left", "front-shoulder-right"] },
+          cues: [
+            "Gleiche Grundprinzipien wie flaches Bankdrücken: Bogenspannung, Ellbogen ca. 45°, Stange auch leicht nach hinten drücken.",
+            "Bankwinkel bei 30° halten — steiler verschiebt den Reiz zu stark zur vorderen Schulter.",
+            "Kurzhanteln zum oberen Brustbereich führen, nicht Richtung Hals."
+          ],
+          video: "https://www.youtube.com/watch?v=vcBig73ojpE", videoLabel: "How To Get A Huge Bench Press — Jeff Nippard (Grundtechnik)" },
+        { id: "ub2", name: "Rudern vorgebeugt, Kurzhantel/Langhantel", reps: "6–10", rir: "1–2", restSec: 120, restLabel: "2 Min.", sets: 3,
+          muscle: { view: "back", primary: ["midback", "lats-left", "lats-right"], secondary: [] },
+          cues: [
+            "Oberkörper 45–75° vorbeugen und diesen Winkel für den ganzen Satz halten.",
+            "Lats vor dem ersten Zug aktiv anspannen, dann Ellbogen nach hinten UND leicht nach außen ziehen.",
+            "Zug bis zu den unteren Rippen führen, nicht bis zum Bauchnabel."
+          ],
+          offenNote: "Offen: kein einzeln verifiziertes Kurzvideo gefunden — steckt in einem 15-Min.-Sammelvideo ohne passende Kapitelmarke. Im Studio zeigen lassen.",
+          video: "", videoLabel: "" },
+        { id: "ub3", name: "Klimmzug bzw. Latzug breit, Obergriff", reps: "6–10", rir: "1–2", restSec: 90, restLabel: "90 Sek.", sets: 3,
+          muscle: { view: "back", primary: ["lats-left", "lats-right"], secondary: ["midback"] },
+          cues: [
+            "Griff etwas breiter als Schulterbreite, Handflächen nach vorne.",
+            "Schulterblätter zuerst aktiv nach unten ziehen, erst danach den Zug mit den Armen fortsetzen.",
+            "Ellbogen ca. 10–15° nach außen geführt Richtung Hüfte ziehen."
+          ],
+          video: "https://www.youtube.com/watch?v=SpJwyAbwDBk&t=60s", videoLabel: "Vertikales Ziehen: Klimmzüge ab 1:00 — Jeff Nippard (Kapitelmarke, kein eigenes Video)" },
+        { id: "ub4", name: "Face Pull, Kabel", reps: "12–15", rir: "1–2", restSec: 60, restLabel: "60 Sek.", sets: 3,
+          muscle: { view: "back", primary: ["rearshoulder-left", "rearshoulder-right"], secondary: ["midback"] },
+          cues: [
+            "Zug auf Augenhöhe ansetzen, Ellbogen hoch führen.",
+            "Außenrotation am Endpunkt betonen — schont die Schulter, balanciert das Drück-Volumen aus."
+          ],
+          video: "https://www.youtube.com/watch?v=j0vWz7hoEOE", videoLabel: "Jeff Nippard Demonstrates Face Pulls" },
+        { id: "ub5", name: "Butterfly / Cable-Fly (gedehnte Position)", reps: "10–15", rir: "0–1", restSec: 60, restLabel: "60 Sek.", sets: 2,
+          muscle: { view: "front", primary: ["chest"], secondary: [] },
+          cues: [
+            "Leichte Ellbogenbeugung während der gesamten Bewegung beibehalten, Arme nicht durchstrecken.",
+            "Bewegung wie eine Umarmung führen, nicht wie ein Drücken.",
+            "Am gedehnten Punkt kurz die Spannung halten, dann kontrolliert zurückführen."
+          ],
+          offenNote: "Offen: kein einzelnes Vollvideo mit sicher verifizierter URL gefunden — im Studio zeigen lassen oder Kanal durchsuchen.",
+          video: "https://www.youtube.com/@JeffNippard", videoLabel: "Jeff Nippard — Kanal (Suche: „cable fly“)" },
+        { id: "ub6", name: "Hammer-Curl, Kabel oder Kurzhantel", reps: "10–15", rir: "0–1", restSec: 60, restLabel: "60 Sek.", sets: 2, optional: true,
+          muscle: { view: "front", primary: ["biceps-left", "biceps-right"], secondary: [] },
+          cues: [
+            "Handflächen zeigen zueinander (neutraler Griff) und bleiben während der ganzen Bewegung in dieser Position.",
+            "Ellbogen am Körper fixiert, kein Schwung aus der Schulter."
+          ],
+          video: "https://www.youtube.com/watch?v=HsV4wDUxdow", videoLabel: "Jeff Nippard: wissenschaftsbasiertes Arm-Workout" },
+        { id: "ub7", name: "Dips Maschine oder enger Griff", reps: "8–12", rir: "0–1", restSec: 60, restLabel: "60 Sek.", sets: 2, optional: true,
+          muscle: { view: "back", primary: ["triceps-left", "triceps-right"], secondary: [] },
+          cues: [
+            "Oberkörper aufrecht halten für mehr Trizeps-Fokus (Vorlehnen verschiebt Richtung Brust).",
+            "Ellbogen eng am Körper führen, nicht nach außen abspreizen.",
+            "Nur so tief absenken, wie die Schulter beschwerdefrei mitgeht."
+          ],
+          video: "https://www.youtube.com/watch?v=HsV4wDUxdow", videoLabel: "Jeff Nippard: wissenschaftsbasiertes Arm-Workout" }
+      ]
+    },
+    lowerB: {
+      label: "Lower B",
+      focus: "Kreuzheben-Fokus, posteriore Kette",
+      exercises: [
+        { id: "lb1", name: "Kreuzheben, konventionell oder Sumo", reps: "5–8", rir: "1–2", restSec: 180, restLabel: "3 Min.", sets: 3,
+          muscle: { view: "back", primary: ["hamstrings-left", "hamstrings-right", "glutes", "lowerback"], secondary: [] },
+          cues: [
+            "Hüfte nach hinten schieben, nicht in die Kniebeuge fallen — „kein Squat“.",
+            "Griff knapp außerhalb der Schienbeine, Schienbein senkrecht.",
+            "Spannung graduell in die Stange aufbauen statt reißen, dann Brust hoch und Hüfte nach vorne durchstrecken."
+          ],
+          video: "https://www.youtube.com/watch?v=VL5Ab0T07e4", videoLabel: "Build A Bigger Deadlift — Jeff Nippard" },
+        { id: "lb2", name: "Bulgarian Split Squat, Kurzhantel", reps: "8–12", rir: "1–2", restSec: 90, restLabel: "90 Sek.", sets: 3,
+          muscle: { view: "front", primary: ["quad-left", "quad-right"], secondary: [] },
+          cues: [
+            "Hinterer Fuß erhöht, vorderer Fuß so weit vorne, dass das Knie nicht über die Zehenspitze hinausschießt.",
+            "Oberkörper leicht nach vorne geneigt für mehr Gesäßbeteiligung, aufrecht für mehr Quadrizeps.",
+            "Kontrollierte Tiefe bis kurz über den Boden, Großteil des Gewichts auf dem vorderen Fuß."
+          ],
+          offenNote: "Offen: kein einzeln verifiziertes Kurzvideo gefunden — steckt in einem 11-Min.-Sammelvideo ohne verifizierbaren Timestamp. Im Studio zeigen lassen.",
+          video: "", videoLabel: "" },
+        { id: "lb3", name: "Beinbeuger liegend/sitzend (gedehnt)", reps: "10–15", rir: "0–1", restSec: 60, restLabel: "60 Sek.", sets: 3,
+          muscle: { view: "back", primary: ["hamstrings-left", "hamstrings-right"], secondary: [] },
+          cues: [
+            "Volle Dehnung am Start zulassen, Hüfte dabei fest auf der Auflage lassen.",
+            "Am Ende der Bewegung kurz zusammenziehen, dann kontrolliert zurückführen.",
+            "Zehen leicht anziehen (Richtung Schienbein)."
+          ],
+          video: "https://www.youtube.com/watch?v=jNC3aYBHL1I", videoLabel: "Jeff Nippard FIXED my hamstring curl" },
+        { id: "lb4", name: "Wadenheben sitzend", reps: "10–15", rir: "0–1", restSec: 60, restLabel: "60 Sek.", sets: 3,
+          muscle: { view: "back", primary: ["calves-left", "calves-right"], secondary: [] },
+          cues: [
+            "Fokus liegt durch das gebeugte Knie stärker auf dem Soleus.",
+            "Gleiches Prinzip wie stehend: volle Dehnung unten, kurze Kontraktion oben, kein Schwung aus den Knien."
+          ],
+          video: "https://www.youtube.com/watch?v=21inrjhoFkQ", videoLabel: "The Most Scientific Way to Train Calves — Jeff Nippard" },
+        { id: "lb5", name: "Hüftadduktion, Maschine", reps: "15–20", rir: "0–1", restSec: 45, restLabel: "45 Sek.", sets: 2, optional: true,
+          muscle: { view: "front", primary: ["adductors"], secondary: [] },
+          cues: [
+            "Sitzposition und Polster so einstellen, dass die Bewegung sauber aus der Hüfte kommt.",
+            "Kontrollierte Bewegung in beide Richtungen, kein Anschlagen der Gewichte."
+          ],
+          offenNote: "Offen: kein verifiziertes Einzelvideo gefunden. Im Studio zeigen lassen.",
+          video: "", videoLabel: "" }
+      ]
+    }
+  };
+
+  var DAY_ORDER = ["upperA", "lowerA", "upperB", "lowerB"];
+  var DAY_LABEL = { upperA: "Upper A", lowerA: "Lower A", upperB: "Upper B", lowerB: "Lower B" };
+
+  // ---------- Storage ----------
+  var STORE_KEY = "trainingsplanGalaxyFitness_v2";
+  function loadStore() {
+    try {
+      var raw = localStorage.getItem(STORE_KEY);
+      var s = raw ? JSON.parse(raw) : {};
+      s.todayDate = s.todayDate || "";
+      s.checked = s.checked || {};
+      s.todaySets = s.todaySets || {};
+      s.lastWeight = s.lastWeight || {};
+      s.history = s.history || {};
+      s.workoutLog = s.workoutLog || {};
+      return s;
+    } catch (e) { return { todayDate: "", checked: {}, todaySets: {}, lastWeight: {}, history: {}, workoutLog: {} }; }
+  }
+  function saveStore(store) {
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(store)); } catch (e) {}
+  }
+  var store = loadStore();
+
+  function todayStr() {
+    var d = new Date();
+    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  }
+  function todayDisplay() {
+    var d = new Date();
+    return String(d.getDate()).padStart(2, "0") + "." + String(d.getMonth() + 1).padStart(2, "0") + "." + d.getFullYear();
+  }
+  if (store.todayDate !== todayStr()) {
+    store.todayDate = todayStr();
+    store.checked = {};
+    store.todaySets = {};
+    saveStore(store);
+  }
+
+  function ensureTodaySets(ex) {
+    if (!store.todaySets[ex.id]) {
+      var lastW = store.lastWeight[ex.id] || "";
+      store.todaySets[ex.id] = [];
+      // Zuletzt benutztes Gewicht als echten (editierbaren) Vorschlag vorbefuellen, nicht nur als Placeholder
+      for (var i = 0; i < ex.sets; i++) store.todaySets[ex.id].push({ w: lastW, r: "" });
+    }
+    return store.todaySets[ex.id];
+  }
+  function isChecked(exId, setIdx) { return !!(store.checked[exId] && store.checked[exId][setIdx]); }
+  function setChecked(exId, setIdx, val) {
+    if (!store.checked[exId]) store.checked[exId] = {};
+    store.checked[exId][setIdx] = val;
+    saveStore(store);
+  }
+  function doneCount(ex) {
+    var n = 0;
+    for (var i = 0; i < ex.sets; i++) if (isChecked(ex.id, i)) n++;
+    return n;
+  }
+
+  function logHistory(ex, dayId) {
+    var arr = ensureTodaySets(ex);
+    if (!store.history[ex.id]) store.history[ex.id] = [];
+    var entry = null;
+    for (var i = 0; i < store.history[ex.id].length; i++) {
+      if (store.history[ex.id][i].date === todayStr()) { entry = store.history[ex.id][i]; break; }
+    }
+    if (!entry) {
+      entry = { date: todayStr(), day: dayId, sets: [] };
+      store.history[ex.id].unshift(entry);
+    }
+    entry.sets = arr.map(function (s) { return { w: s.w, r: s.r }; });
+    // max 12 Einträge pro Übung behalten
+    if (store.history[ex.id].length > 12) store.history[ex.id].length = 12;
+    saveStore(store);
+  }
+
+  // ---------- Render ----------
+  var currentDay = DAY_ORDER[0];
+  var openExId = null;
+  var openVerlaufExId = null;
+
+  var watchCard = document.getElementById("watchCard");
+  var tabsEl = document.getElementById("tabs");
+  var dayFocusEl = document.getElementById("dayFocus");
+  var dayKernEl = document.getElementById("dayKern");
+  var exListEl = document.getElementById("exList");
+
+  function renderTabs() {
+    tabsEl.innerHTML = "";
+    DAY_ORDER.forEach(function (dayId) {
+      var btn = document.createElement("button");
+      btn.className = "tab" + (dayId === currentDay ? " active" : "");
+      btn.textContent = PLAN[dayId].label;
+      btn.addEventListener("click", function () {
+        currentDay = dayId; openExId = null; openVerlaufExId = null; renderAll();
+      });
+      tabsEl.appendChild(btn);
+    });
+    var auswBtn = document.createElement("button");
+    auswBtn.className = "tab" + (currentDay === "auswertung" ? " active" : "");
+    auswBtn.textContent = "Auswertung";
+    auswBtn.addEventListener("click", function () {
+      currentDay = "auswertung"; openExId = null; openVerlaufExId = null; renderAll();
+    });
+    tabsEl.appendChild(auswBtn);
+  }
+
+  function renderDayInfo() {
+    if (currentDay === "auswertung") {
+      dayFocusEl.textContent = "Fortschritt über die Wochen";
+      dayKernEl.textContent = "Aus deinen gespeicherten Sätzen und Watch-Daten — nur auf diesem Gerät.";
+      watchCard.style.display = "none";
+      return;
+    }
+    watchCard.style.display = "";
+    var day = PLAN[currentDay];
+    dayFocusEl.textContent = day.focus;
+    dayKernEl.textContent = "Kernprogramm ≈ 55 Min. · optionaler Zusatz bis 90 Min.";
+  }
+
+  function renderExercises() {
+    if (currentDay === "auswertung") { renderAuswertung(); return; }
+    var day = PLAN[currentDay];
+    exListEl.innerHTML = "";
+    var core = day.exercises.filter(function (e) { return !e.optional; });
+    var optional = day.exercises.filter(function (e) { return e.optional; });
+
+    var coreLabel = document.createElement("div");
+    coreLabel.className = "section-label";
+    coreLabel.textContent = "Kernprogramm";
+    exListEl.appendChild(coreLabel);
+    core.forEach(function (ex) { exListEl.appendChild(renderExCard(ex)); });
+
+    if (optional.length) {
+      var optLabel = document.createElement("div");
+      optLabel.className = "section-label";
+      optLabel.textContent = "Optionaler Zusatz";
+      exListEl.appendChild(optLabel);
+      optional.forEach(function (ex) { exListEl.appendChild(renderExCard(ex)); });
+    }
+  }
+
+  function renderExCard(ex) {
+    var card = document.createElement("div");
+    card.className = "ex-card" + (openExId === ex.id ? " open" : "");
+
+    var head = document.createElement("div");
+    head.className = "ex-head";
+    var done = doneCount(ex);
+    head.innerHTML =
+      '<div class="ex-progress-dot' + (done === ex.sets ? " done" : "") + '"></div>' +
+      '<div class="ex-head-left">' +
+        '<div class="ex-name">' + ex.name + (ex.optional ? '<span class="opt-badge">Optional</span>' : "") + '</div>' +
+        '<div class="ex-meta">' + ex.sets + ' × ' + ex.reps + ' · RIR ' + ex.rir + ' · Pause ' + ex.restLabel + (done ? " · " + done + "/" + ex.sets + " erledigt" : "") + '</div>' +
+      '</div>' +
+      '<div class="ex-chevron">▶</div>';
+    head.addEventListener("click", function () {
+      openExId = (openExId === ex.id) ? null : ex.id;
+      renderAll();
+    });
+    card.appendChild(head);
+
+    var body = document.createElement("div");
+    body.className = "ex-body";
+
+    var topRow = document.createElement("div");
+    topRow.className = "ex-top-row";
+
+    var diagram = document.createElement("div");
+    diagram.className = "muscle-diagram";
+    diagram.innerHTML = buildMuscleSVG(ex.muscle.view, ex.muscle.primary, ex.muscle.secondary) +
+      '<div class="muscle-caption">' + (ex.muscle.view === "back" ? "Rückenansicht" : "Vorderansicht") + '</div>';
+    topRow.appendChild(diagram);
+
+    if (ex.cues && ex.cues.length) {
+      var ul = document.createElement("ul");
+      ul.className = "cues";
+      ex.cues.forEach(function (c) {
+        var li = document.createElement("li");
+        li.textContent = c;
+        ul.appendChild(li);
+      });
+      topRow.appendChild(ul);
+    }
+    body.appendChild(topRow);
+
+    if (ex.offenNote) {
+      var note = document.createElement("div");
+      note.className = "offen-note";
+      note.textContent = ex.offenNote;
+      body.appendChild(note);
+    }
+
+    if (ex.video) {
+      var a = document.createElement("a");
+      a.className = "video-link";
+      a.href = ex.video;
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
+      a.textContent = "▶ Technik-Video";
+      body.appendChild(a);
+    }
+
+    body.appendChild(renderSetsTable(ex));
+
+    var actions = document.createElement("div");
+    actions.className = "ex-actions";
+    var timerBtn = document.createElement("button");
+    timerBtn.className = "btn primary";
+    timerBtn.textContent = "Pause starten (" + ex.restLabel + ")";
+    timerBtn.addEventListener("click", function () { startTimer(ex); });
+    actions.appendChild(timerBtn);
+
+    var verlaufBtn = document.createElement("button");
+    verlaufBtn.className = "btn";
+    verlaufBtn.textContent = "Verlauf";
+    verlaufBtn.addEventListener("click", function () {
+      openVerlaufExId = (openVerlaufExId === ex.id) ? null : ex.id;
+      renderAll();
+    });
+    actions.appendChild(verlaufBtn);
+    body.appendChild(actions);
+
+    body.appendChild(renderVerlauf(ex));
+
+    card.appendChild(body);
+    return card;
+  }
+
+  function renderVerlauf(ex) {
+    var box = document.createElement("div");
+    box.className = "verlauf-box" + (openVerlaufExId === ex.id ? " show" : "");
+    var hist = store.history[ex.id] || [];
+    if (!hist.length) {
+      box.innerHTML = '<div class="verlauf-empty">Noch keine abgeschlossenen Sätze für diese Übung.</div>';
+      return box;
+    }
+    var table = document.createElement("table");
+    table.className = "verlauf-table";
+    var head = "<tr><th>Datum</th>";
+    for (var i = 0; i < ex.sets; i++) head += "<th>Satz " + (i + 1) + "</th>";
+    head += "</tr>";
+    table.innerHTML = head;
+    hist.forEach(function (entry) {
+      var parts = entry.date.split("-");
+      var dateDisp = parts[2] + "." + parts[1] + ".";
+      var row = "<tr><td>" + dateDisp + "</td>";
+      for (var i = 0; i < ex.sets; i++) {
+        var s = entry.sets[i] || { w: "", r: "" };
+        var cell = (s.w || "–") + (s.r ? " × " + s.r : "");
+        row += "<td>" + cell + "</td>";
+      }
+      row += "</tr>";
+      table.innerHTML += row;
+    });
+    box.appendChild(table);
+    return box;
+  }
+
+  function renderAuswertung() {
+    exListEl.innerHTML = "";
+    var anything = false;
+
+    DAY_ORDER.forEach(function (dayId) {
+      var day = PLAN[dayId];
+      var exWithHist = day.exercises.filter(function (ex) { return (store.history[ex.id] || []).length > 0; });
+      if (!exWithHist.length) return;
+      anything = true;
+      var label = document.createElement("div");
+      label.className = "section-label";
+      label.textContent = day.label;
+      exListEl.appendChild(label);
+      exWithHist.forEach(function (ex) {
+        var card = document.createElement("div");
+        card.className = "ausw-card";
+        var name = document.createElement("div");
+        name.className = "ausw-ex-name";
+        name.textContent = ex.name;
+        card.appendChild(name);
+        var hist = store.history[ex.id];
+        var table = document.createElement("table");
+        table.className = "verlauf-table";
+        var head = "<tr><th>Datum</th>";
+        for (var i = 0; i < ex.sets; i++) head += "<th>Satz " + (i + 1) + "</th>";
+        head += "</tr>";
+        var rows = "";
+        hist.forEach(function (entry) {
+          var parts = entry.date.split("-");
+          var dateDisp = parts[2] + "." + parts[1] + ".";
+          var row = "<tr><td>" + dateDisp + "</td>";
+          for (var i = 0; i < ex.sets; i++) {
+            var s = entry.sets[i] || { w: "", r: "" };
+            var cell = (s.w || "–") + (s.r ? " × " + s.r : "");
+            row += "<td>" + cell + "</td>";
+          }
+          row += "</tr>";
+          rows += row;
+        });
+        table.innerHTML = head + rows;
+        card.appendChild(table);
+        exListEl.appendChild(card);
+      });
+    });
+
+    var watchDates = Object.keys(store.workoutLog).sort().reverse();
+    if (watchDates.length) {
+      anything = true;
+      var wLabel = document.createElement("div");
+      wLabel.className = "section-label";
+      wLabel.textContent = "Watch-Daten Verlauf";
+      exListEl.appendChild(wLabel);
+      var wCard = document.createElement("div");
+      wCard.className = "ausw-card";
+      var wRows = '<tr><th>Datum</th><th>Tag</th><th>Dauer</th><th>kcal aktiv</th><th>kcal gesamt</th><th>Ø HF</th></tr>';
+      watchDates.forEach(function (d) {
+        var e = store.workoutLog[d];
+        var parts = d.split("-");
+        var disp = parts[2] + "." + parts[1] + ".";
+        wRows += "<tr><td>" + disp + "</td><td>" + (DAY_LABEL[e.day] || "–") + "</td><td>" + (e.dauer || "–") + "</td><td>" + (e.kcalAktiv || "–") + "</td><td>" + (e.kcalGesamt || "–") + "</td><td>" + (e.hf || "–") + "</td></tr>";
+      });
+      wCard.innerHTML = '<table class="verlauf-table">' + wRows + "</table>";
+      exListEl.appendChild(wCard);
+    }
+
+    if (!anything) {
+      var empty = document.createElement("div");
+      empty.className = "ausw-empty";
+      empty.textContent = "Noch keine abgeschlossenen Sätze oder Watch-Daten gespeichert. Sobald du Sätze abhakst oder Watch-Daten einträgst, erscheint hier dein Verlauf über die Wochen.";
+      exListEl.appendChild(empty);
+    }
+
+    // ---- Daten-Sicherung ----
+    var backupLabel = document.createElement("div");
+    backupLabel.className = "section-label";
+    backupLabel.textContent = "Daten-Sicherung";
+    exListEl.appendChild(backupLabel);
+
+    var backupCard = document.createElement("div");
+    backupCard.className = "ausw-card";
+    backupCard.innerHTML =
+      '<div class="ausw-ex-name">Backup-Code erzeugen</div>' +
+      '<div class="offen-note" style="margin:2px 0 8px">Schützt gegen Datenverlust durch den Browser (z. B. Speicher-Aufräumen nach Inaktivität). Code kopieren und irgendwo sichern — z. B. Notizen-App.</div>' +
+      '<textarea class="backup-textarea" id="backupOut" readonly></textarea>' +
+      '<div class="ex-actions">' +
+        '<button class="btn primary" id="backupGenBtn">Backup-Code erzeugen</button>' +
+        '<button class="btn" id="backupCopyBtn">Kopieren</button>' +
+      '</div>' +
+      '<div class="backup-note" id="backupGenNote"></div>' +
+      '<div class="ausw-ex-name" style="margin-top:16px">Backup-Code wiederherstellen</div>' +
+      '<div class="offen-note" style="margin:2px 0 8px">Ersetzt alle Daten auf diesem Gerät durch den eingefügten Code.</div>' +
+      '<textarea class="backup-textarea" id="backupIn" placeholder="Backup-Code hier einfügen …"></textarea>' +
+      '<div class="ex-actions"><button class="btn" id="backupRestoreBtn">Wiederherstellen</button></div>' +
+      '<div class="backup-note" id="backupRestoreNote"></div>';
+    exListEl.appendChild(backupCard);
+
+    var backupOut = backupCard.querySelector("#backupOut");
+    var backupGenNote = backupCard.querySelector("#backupGenNote");
+    backupCard.querySelector("#backupGenBtn").addEventListener("click", function () {
+      backupOut.value = JSON.stringify(store);
+      backupGenNote.textContent = "Code erzeugt — jetzt kopieren.";
+      backupGenNote.className = "backup-note ok";
+    });
+    backupCard.querySelector("#backupCopyBtn").addEventListener("click", function () {
+      if (!backupOut.value) { backupOut.value = JSON.stringify(store); }
+      backupOut.select();
+      var ok = false;
+      try { ok = document.execCommand && document.execCommand("copy"); } catch (e) { ok = false; }
+      if (!ok && navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(backupOut.value).then(function () {
+          backupGenNote.textContent = "In Zwischenablage kopiert.";
+          backupGenNote.className = "backup-note ok";
+        }).catch(function () {
+          backupGenNote.textContent = "Kopieren nicht möglich — Text manuell markieren und kopieren.";
+          backupGenNote.className = "backup-note err";
+        });
+      } else {
+        backupGenNote.textContent = ok ? "In Zwischenablage kopiert." : "Kopieren nicht möglich — Text manuell markieren und kopieren.";
+        backupGenNote.className = ok ? "backup-note ok" : "backup-note err";
+      }
+    });
+    var backupRestoreNote = backupCard.querySelector("#backupRestoreNote");
+    backupCard.querySelector("#backupRestoreBtn").addEventListener("click", function () {
+      var raw = backupCard.querySelector("#backupIn").value.trim();
+      if (!raw) { backupRestoreNote.textContent = "Kein Code eingefügt."; backupRestoreNote.className = "backup-note err"; return; }
+      var parsed;
+      try { parsed = JSON.parse(raw); } catch (e) {
+        backupRestoreNote.textContent = "Code nicht lesbar — bitte vollständig einfügen.";
+        backupRestoreNote.className = "backup-note err";
+        return;
+      }
+      if (!window.confirm("Vorhandene Daten auf diesem Gerät werden ersetzt. Fortfahren?")) return;
+      store = loadStore(); // Basisstruktur
+      Object.keys(parsed).forEach(function (k) { store[k] = parsed[k]; });
+      saveStore(store);
+      backupRestoreNote.textContent = "Wiederhergestellt.";
+      backupRestoreNote.className = "backup-note ok";
+      renderAll();
+      loadTodayWatch();
+      renderWatchHistory();
+    });
+  }
+
+  function renderSetsTable(ex) {
+    var arr = ensureTodaySets(ex);
+    var lastW = store.lastWeight[ex.id] || "";
+    var table = document.createElement("table");
+    table.className = "sets-table";
+    var thead = document.createElement("tr");
+    thead.innerHTML = "<th>Satz</th><th>kg</th><th>Wdh.</th><th></th>";
+    table.appendChild(thead);
+
+    for (var i = 0; i < ex.sets; i++) {
+      (function (idx) {
+        var row = document.createElement("tr");
+        row.className = "set-row" + (isChecked(ex.id, idx) ? " done" : "");
+
+        var tdNum = document.createElement("td");
+        tdNum.className = "set-num";
+        tdNum.textContent = (idx + 1);
+        row.appendChild(tdNum);
+
+        var tdW = document.createElement("td");
+        var wInput = document.createElement("input");
+        wInput.className = "set-input";
+        wInput.type = "text";
+        wInput.inputMode = "decimal";
+        wInput.placeholder = idx === 0 ? (lastW || "kg") : "kg";
+        wInput.value = arr[idx].w || "";
+        wInput.addEventListener("input", function () {
+          arr[idx].w = wInput.value;
+          // Beim ersten Satz eingetragen -> leere Folgesätze automatisch vorbefüllen (nur die noch leeren, unbearbeiteten)
+          if (idx === 0) {
+            for (var j = 1; j < ex.sets; j++) {
+              if (!arr[j].w) {
+                arr[j].w = wInput.value;
+                var followInput = table.querySelector('tr:nth-child(' + (j + 2) + ') .set-input[data-field="w"]');
+                if (followInput) followInput.value = wInput.value;
+              }
+            }
+          }
+          saveStore(store);
+        });
+        wInput.setAttribute("data-field", "w");
+        tdW.appendChild(wInput);
+        row.appendChild(tdW);
+
+        var tdR = document.createElement("td");
+        var repInput = document.createElement("input");
+        repInput.className = "set-input";
+        repInput.type = "text";
+        repInput.inputMode = "numeric";
+        repInput.placeholder = ex.reps;
+        repInput.value = arr[idx].r || "";
+        repInput.setAttribute("data-field", "r");
+        repInput.addEventListener("input", function () {
+          arr[idx].r = repInput.value;
+          saveStore(store);
+        });
+        tdR.appendChild(repInput);
+        row.appendChild(tdR);
+
+        var tdCheck = document.createElement("td");
+        var checkBtn = document.createElement("button");
+        checkBtn.className = "set-check";
+        checkBtn.textContent = isChecked(ex.id, idx) ? "✓" : "";
+        checkBtn.addEventListener("click", function () {
+          var nowDone = !isChecked(ex.id, idx);
+          setChecked(ex.id, idx, nowDone);
+          if (nowDone) {
+            arr[idx].w = wInput.value;
+            arr[idx].r = repInput.value;
+            if (wInput.value) store.lastWeight[ex.id] = wInput.value;
+            saveStore(store);
+            logHistory(ex, currentDay);
+          }
+          renderAll();
+        });
+        tdCheck.appendChild(checkBtn);
+        row.appendChild(tdCheck);
+
+        table.appendChild(row);
+      })(i);
+    }
+    return table;
+  }
+
+  function renderAll() {
+    renderTabs();
+    renderDayInfo();
+    renderExercises();
+  }
+
+  renderAll();
+
+  // ---------- Watch-Daten (manuell, da Website kein HealthKit lesen kann) ----------
+  var watchHead = document.getElementById("watchHead");
+  var watchSub = document.getElementById("watchSub");
+  var wDauer = document.getElementById("wDauer");
+  var wHf = document.getElementById("wHf");
+  var wKcalAktiv = document.getElementById("wKcalAktiv");
+  var wKcalGesamt = document.getElementById("wKcalGesamt");
+  var wSaveBtn = document.getElementById("wSaveBtn");
+  var wSavedNote = document.getElementById("wSavedNote");
+  var watchHistoryEl = document.getElementById("watchHistory");
+
+  watchHead.addEventListener("click", function () { watchCard.classList.toggle("open"); });
+
+  // hh:mm-Maske: Doppelpunkt automatisch einfuegen, da die numerische Bildschirmtastatur keine ":"-Taste zeigt
+  wDauer.addEventListener("input", function () {
+    var digits = wDauer.value.replace(/\D/g, "").slice(0, 4);
+    if (digits.length > 2) {
+      wDauer.value = digits.slice(0, digits.length - 2) + ":" + digits.slice(-2);
+    } else {
+      wDauer.value = digits;
+    }
+  });
+
+  function loadTodayWatch() {
+    var e = store.workoutLog[todayStr()];
+    if (e) {
+      wDauer.value = e.dauer || ""; wHf.value = e.hf || "";
+      wKcalAktiv.value = e.kcalAktiv || ""; wKcalGesamt.value = e.kcalGesamt || "";
+      watchSub.textContent = "Für heute (" + todayDisplay() + ") gespeichert — kann geändert werden";
+    } else {
+      wDauer.value = ""; wHf.value = ""; wKcalAktiv.value = ""; wKcalGesamt.value = "";
+      watchSub.textContent = "Dauer, Kalorien, Ø-Herzfrequenz für heute eintragen";
+    }
+  }
+  loadTodayWatch();
+
+  function renderWatchHistory() {
+    var dates = Object.keys(store.workoutLog).sort().reverse().slice(0, 8);
+    if (!dates.length) { watchHistoryEl.innerHTML = '<div class="verlauf-empty">Noch keine Watch-Daten gespeichert.</div>'; return; }
+    var rows = '<tr><th>Datum</th><th>Tag</th><th>Dauer</th><th>kcal aktiv</th><th>Ø HF</th></tr>';
+    dates.forEach(function (d) {
+      var e = store.workoutLog[d];
+      var parts = d.split("-");
+      var disp = parts[2] + "." + parts[1] + ".";
+      rows += "<tr><td>" + disp + "</td><td>" + (DAY_LABEL[e.day] || "–") + "</td><td>" + (e.dauer || "–") + "</td><td>" + (e.kcalAktiv || "–") + "</td><td>" + (e.hf || "–") + "</td></tr>";
+    });
+    watchHistoryEl.innerHTML = '<table class="verlauf-table" style="margin-top:10px">' + rows + "</table>";
+  }
+  renderWatchHistory();
+
+  wSaveBtn.addEventListener("click", function () {
+    store.workoutLog[todayStr()] = {
+      day: currentDay, dauer: wDauer.value, hf: wHf.value,
+      kcalAktiv: wKcalAktiv.value, kcalGesamt: wKcalGesamt.value
+    };
+    saveStore(store);
+    wSavedNote.classList.add("show");
+    setTimeout(function () { wSavedNote.classList.remove("show"); }, 2500);
+    watchSub.textContent = "Für heute (" + todayDisplay() + ") gespeichert — kann geändert werden";
+    renderWatchHistory();
+  });
+
+  // ---------- Pausen-Leiste (unten, nicht blockierend) ----------
+  var timerBar = document.getElementById("timerBar");
+  var timerBarNum = document.getElementById("timerBarNum");
+  var timerBarName = document.getElementById("timerBarName");
+  var timerBarMinus = document.getElementById("timerBarMinus");
+  var timerBarClose = document.getElementById("timerBarClose");
+  var timerInterval = null;
+  var remaining = 0;
+
+  function beep() {
+    try {
+      var ctx = new (window.AudioContext || window.webkitAudioContext)();
+      function tone(freq, delay) {
+        setTimeout(function () {
+          var osc = ctx.createOscillator(); var gain = ctx.createGain();
+          osc.type = "sine"; osc.frequency.value = freq;
+          gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.3, ctx.currentTime + 0.01);
+          gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.55);
+          osc.connect(gain); gain.connect(ctx.destination);
+          osc.start(); osc.stop(ctx.currentTime + 0.6);
+        }, delay);
+      }
+      tone(880, 0); tone(1046, 200); tone(1318, 400);
+    } catch (e) {}
+  }
+
+  function tick() {
+    remaining -= 1;
+    if (remaining <= 0) {
+      remaining = 0;
+      timerBarNum.textContent = "0";
+      timerBar.classList.add("done");
+      clearInterval(timerInterval); timerInterval = null;
+      try { if (navigator.vibrate) navigator.vibrate([250, 100, 250, 100, 250]); } catch (e) {}
+      beep();
+    } else {
+      timerBarNum.textContent = String(remaining);
+    }
+  }
+
+  function startTimer(ex) {
+    remaining = ex.restSec;
+    timerBarName.textContent = ex.name;
+    timerBarNum.textContent = String(remaining);
+    timerBar.classList.remove("done");
+    timerBar.classList.add("show");
+    if (timerInterval) clearInterval(timerInterval);
+    timerInterval = setInterval(tick, 1000);
+  }
+  function closeTimer() {
+    timerBar.classList.remove("show");
+    if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+  }
+  timerBarMinus.addEventListener("click", function () {
+    remaining = Math.max(0, remaining - 15);
+    timerBarNum.textContent = String(remaining);
+    if (remaining === 0) {
+      timerBar.classList.add("done");
+      if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+    }
+  });
+  timerBarClose.addEventListener("click", closeTimer);
+
+})();
+</script>
+</body>
+</html>
