@@ -1,14 +1,12 @@
-<!DOCTYPE html>
-<html lang="de">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Trainingsplan Galaxy Fitness</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+
 <style>
   :root {
     --font-sans: 'Inter', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
 
-    
     --c-basis:   #1F2933;
     --c-akzent:  #1B5E8C;
     --c-signal:  #D98032;
@@ -202,8 +200,7 @@
   .backup-note.ok { color: var(--erledigt-text); }
   .backup-note.err { color: var(--muskel-aktiv); }
 </style>
-</head>
-<body>
+
 <h1>Trainingsplan Hypertrophie</h1>
 <p class="app-sub">Galaxy Fitness · 4×/Woche Upper/Lower-Split · v0.3</p>
 
@@ -803,6 +800,141 @@
     return box;
   }
 
+  // ---------- Export (CSV + formatierter Report) ----------
+  function csvEscape(val) {
+    var s = (val === undefined || val === null) ? "" : String(val);
+    if (/[;"\n]/.test(s)) s = '"' + s.replace(/"/g, '""') + '"';
+    return s;
+  }
+
+  function downloadBlob(filename, content, mime) {
+    var blob = new Blob([content], { type: mime });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click();
+    setTimeout(function () { document.body.removeChild(a); URL.revokeObjectURL(url); }, 150);
+  }
+
+  function fmtDateRep(iso) {
+    var p = iso.split("-");
+    return p[2] + "." + p[1] + "." + p[0].slice(2);
+  }
+
+  function buildTrainingCSV() {
+    var lines = [];
+    lines.push("Trainingsdaten");
+    lines.push(["Datum", "Tag", "Übung", "Satz", "Gewicht (kg)", "Wiederholungen"].map(csvEscape).join(";"));
+    DAY_ORDER.forEach(function (dayId) {
+      var day = PLAN[dayId];
+      day.exercises.forEach(function (ex) {
+        var hist = (store.history[ex.id] || []).slice().sort(function (a, b) { return a.date < b.date ? -1 : 1; });
+        hist.forEach(function (entry) {
+          entry.sets.forEach(function (s, i) {
+            if (!s || (!s.w && !s.r)) return;
+            lines.push([entry.date, DAY_LABEL[entry.day] || day.label, ex.name, i + 1, s.w || "", s.r || ""].map(csvEscape).join(";"));
+          });
+        });
+      });
+    });
+    lines.push("");
+    lines.push("Watch-Daten");
+    lines.push(["Datum", "Tag", "Dauer", "Ø HF", "kcal aktiv", "kcal gesamt"].map(csvEscape).join(";"));
+    Object.keys(store.workoutLog).sort().forEach(function (d) {
+      var e = store.workoutLog[d];
+      lines.push([d, DAY_LABEL[e.day] || "", e.dauer || "", e.hf || "", e.kcalAktiv || "", e.kcalGesamt || ""].map(csvEscape).join(";"));
+    });
+    return lines.join("\r\n");
+  }
+
+  var REPORT_CSS =
+    '*{box-sizing:border-box;}' +
+    'body{margin:0;padding:32px 20px;background:#F7F8F9;color:#1F2933;font-family:"Segoe UI","Helvetica Neue",Arial,sans-serif;}' +
+    '.rep-wrap{max-width:640px;margin:0 auto;}' +
+    '.rep-head h1{margin:0 0 4px;font-size:26px;font-weight:700;color:#1F2933;}' +
+    '.rep-sub{margin:0 0 24px;font-size:13px;color:#7B8794;}' +
+    '.rep-day{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#7B8794;margin:24px 0 10px;}' +
+    '.rep-card{background:#FFFFFF;border:1px solid #E4E7EB;border-radius:6px;padding:14px 16px;margin-bottom:10px;}' +
+    '.rep-ex-head{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:6px;margin-bottom:8px;}' +
+    '.rep-ex-name{font-size:15px;font-weight:700;}' +
+    '.rep-delta{font-size:12.5px;font-weight:600;color:#7B8794;}' +
+    '.rep-delta.up{color:#2F6B3A;} .rep-delta.down{color:#B23A3A;}' +
+    '.rep-bar-row{display:flex;align-items:center;gap:8px;font-size:12px;margin:5px 0;}' +
+    '.rep-bar-date{width:52px;flex-shrink:0;color:#7B8794;}' +
+    '.rep-bar-track{flex:1;background:#F0F2F4;border-radius:3px;height:10px;overflow:hidden;}' +
+    '.rep-bar-fill{height:100%;background:#1B5E8C;border-radius:3px;}' +
+    '.rep-bar-val{width:64px;flex-shrink:0;text-align:right;font-weight:600;}' +
+    '.rep-empty{margin:0;font-size:12.5px;color:#7B8794;font-style:italic;}' +
+    '.rep-table{width:100%;border-collapse:collapse;font-size:12.5px;}' +
+    '.rep-table th{text-align:left;color:#7B8794;font-weight:700;padding:4px 6px;border-bottom:1px solid #E4E7EB;}' +
+    '.rep-table td{padding:4px 6px;border-bottom:1px solid #F0F2F4;}' +
+    '.rep-foot{margin-top:28px;font-size:11px;color:#9AA5B1;text-align:center;}' +
+    '@media print{body{background:#FFFFFF;padding:0;}.rep-card{break-inside:avoid;}}';
+
+  function buildReportHTML() {
+    var now = new Date();
+    var genDate = ("0" + now.getDate()).slice(-2) + "." + ("0" + (now.getMonth() + 1)).slice(-2) + "." + now.getFullYear();
+    var exerciseSections = "";
+    var allDates = [];
+
+    DAY_ORDER.forEach(function (dayId) {
+      var day = PLAN[dayId];
+      var exWithHist = day.exercises.filter(function (ex) { return (store.history[ex.id] || []).length > 0; });
+      if (!exWithHist.length) return;
+      exerciseSections += '<h2 class="rep-day">' + day.label + '</h2>';
+      exWithHist.forEach(function (ex) {
+        var hist = store.history[ex.id].slice().sort(function (a, b) { return a.date < b.date ? -1 : 1; });
+        hist.forEach(function (entry) { allDates.push(entry.date); });
+
+        var points = hist.map(function (entry) {
+          var maxW = 0, maxWDisp = "";
+          entry.sets.forEach(function (s) {
+            var n = parseFloat((s.w || "").replace(",", "."));
+            if (!isNaN(n) && n >= maxW) { maxW = n; maxWDisp = s.w; }
+          });
+          return { date: entry.date, w: maxW, wDisp: maxWDisp };
+        }).filter(function (p) { return p.w > 0; });
+
+        var deltaHtml = "";
+        if (points.length >= 2) {
+          var first = points[0], last = points[points.length - 1];
+          var delta = last.w - first.w;
+          var deltaDisp = (delta > 0 ? "+" : "") + (Math.round(delta * 10) / 10) + " kg";
+          deltaHtml = '<span class="rep-delta ' + (delta > 0 ? "up" : (delta < 0 ? "down" : "")) + '">' + deltaDisp + " seit " + fmtDateRep(first.date) + '</span>';
+        }
+
+        var maxAll = Math.max.apply(null, points.map(function (p) { return p.w; }).concat([1]));
+        var bars = points.map(function (p) {
+          var pct = Math.max(6, Math.round((p.w / maxAll) * 100));
+          return '<div class="rep-bar-row"><span class="rep-bar-date">' + fmtDateRep(p.date) + '</span>' +
+            '<div class="rep-bar-track"><div class="rep-bar-fill" style="width:' + pct + '%"></div></div>' +
+            '<span class="rep-bar-val">' + p.wDisp + ' kg</span></div>';
+        }).join("");
+
+        exerciseSections += '<div class="rep-card"><div class="rep-ex-head"><span class="rep-ex-name">' + ex.name + '</span>' + deltaHtml + '</div>' + (bars || '<p class="rep-empty">Keine Gewichtsdaten.</p>') + '</div>';
+      });
+    });
+
+    var watchDates = Object.keys(store.workoutLog).sort();
+    var watchRows = watchDates.map(function (d) {
+      var e = store.workoutLog[d];
+      allDates.push(d);
+      return '<tr><td>' + fmtDateRep(d) + '</td><td>' + (DAY_LABEL[e.day] || "–") + '</td><td>' + (e.dauer || "–") + '</td><td>' + (e.hf || "–") + '</td><td>' + (e.kcalAktiv || "–") + '</td><td>' + (e.kcalGesamt || "–") + '</td></tr>';
+    }).join("");
+    var watchSection = watchDates.length
+      ? '<h2 class="rep-day">Watch-Daten</h2><div class="rep-card"><table class="rep-table"><tr><th>Datum</th><th>Tag</th><th>Dauer</th><th>Ø HF</th><th>kcal aktiv</th><th>kcal gesamt</th></tr>' + watchRows + '</table></div>'
+      : "";
+
+    allDates.sort();
+    var periodHtml = allDates.length ? ("Zeitraum " + fmtDateRep(allDates[0]) + " – " + fmtDateRep(allDates[allDates.length - 1])) : "Noch keine Daten";
+
+    return '<!DOCTYPE html><html lang="de"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">' +
+      '<title>Trainingsbericht Galaxy Fitness</title><style>' + REPORT_CSS + '</style></head><body>' +
+      '<div class="rep-wrap"><div class="rep-head"><h1>Trainingsbericht</h1><p class="rep-sub">Galaxy Fitness · ' + periodHtml + ' · erstellt am ' + genDate + '</p></div>' +
+      exerciseSections + watchSection +
+      '<p class="rep-foot">Erstellt mit der Trainingsplan-App · Galaxy Fitness</p></div></body></html>';
+  }
+
   function renderAuswertung() {
     exListEl.innerHTML = "";
     var anything = false;
@@ -874,6 +1006,30 @@
       empty.textContent = "Noch keine abgeschlossenen Sätze oder Watch-Daten gespeichert. Sobald du Sätze abhakst oder Watch-Daten einträgst, erscheint hier dein Verlauf über die Wochen.";
       exListEl.appendChild(empty);
     }
+
+    // ---- Export ----
+    var exportLabel = document.createElement("div");
+    exportLabel.className = "section-label";
+    exportLabel.textContent = "Export";
+    exListEl.appendChild(exportLabel);
+
+    var exportCard = document.createElement("div");
+    exportCard.className = "ausw-card";
+    exportCard.innerHTML =
+      '<div class="ausw-ex-name">Auswertung exportieren</div>' +
+      '<div class="offen-note" style="margin:2px 0 8px">CSV für Excel/Numbers, oder ein fertig formatierter Bericht zum Ansehen, Ausdrucken oder Teilen.</div>' +
+      '<div class="ex-actions">' +
+        '<button class="btn" id="exportCsvBtn">CSV exportieren</button>' +
+        '<button class="btn primary" id="exportReportBtn">Report exportieren</button>' +
+      '</div>';
+    exListEl.appendChild(exportCard);
+
+    exportCard.querySelector("#exportCsvBtn").addEventListener("click", function () {
+      downloadBlob("Trainingsdaten " + todayStr() + ".csv", String.fromCharCode(65279) + buildTrainingCSV(), "text/csv;charset=utf-8");
+    });
+    exportCard.querySelector("#exportReportBtn").addEventListener("click", function () {
+      downloadBlob("Trainingsbericht " + todayStr() + ".html", buildReportHTML(), "text/html;charset=utf-8");
+    });
 
     // ---- Daten-Sicherung ----
     var backupLabel = document.createElement("div");
@@ -1166,5 +1322,3 @@
 
 })();
 </script>
-</body>
-</html>
