@@ -1297,9 +1297,29 @@
   }
   renderWatchHistory();
 
+  // Trainingstag aus den heute tatsaechlich abgehakten Saetzen ableiten statt aus dem offenen Tab.
+  // Die App startet immer auf Upper A; wer die Watch-Karte vor dem Tab-Wechsel speichert,
+  // bekam sonst den falschen Tag ins Protokoll (aufgefallen am 29.08.2026: Upper B als Upper A verbucht).
+  function tagAusHeutigenSaetzen() {
+    var heute = todayStr(), zaehler = {};
+    DAY_ORDER.forEach(function (dayId) {
+      PLAN[dayId].exercises.forEach(function (ex) {
+        (store.history[ex.id] || []).forEach(function (entry) {
+          if (entry.date === heute) zaehler[entry.day] = (zaehler[entry.day] || 0) + 1;
+        });
+      });
+    });
+    var besterTag = null, max = 0;
+    Object.keys(zaehler).forEach(function (dayId) {
+      if (zaehler[dayId] > max) { max = zaehler[dayId]; besterTag = dayId; }
+    });
+    // Fallback auf den offenen Tab, solange heute noch nichts abgehakt ist
+    return besterTag || (PLAN[currentDay] ? currentDay : DAY_ORDER[0]);
+  }
+
   wSaveBtn.addEventListener("click", function () {
     store.workoutLog[todayStr()] = {
-      day: currentDay, dauer: wDauer.value, hf: wHf.value,
+      day: tagAusHeutigenSaetzen(), dauer: wDauer.value, hf: wHf.value,
       kcalAktiv: wKcalAktiv.value, kcalGesamt: wKcalGesamt.value
     };
     saveStore(store);
