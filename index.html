@@ -133,11 +133,15 @@
   .sets-table td { padding: 5px 4px; vertical-align: middle; }
   .set-row.done { background: var(--erledigt-bg); }
   .set-num { font-size: 13px; font-weight: 700; color: var(--text-grau); width: 22px; }
+  .sets-table th .th-ziel { font-weight: 400; text-transform: none; letter-spacing: 0; opacity: .75; }
   .set-input {
     width: 100%; max-width: 62px; font-family: var(--font-sans); font-size: 15px; padding: 6px 4px;
     border: 1px solid var(--linie); border-radius: var(--radius); background: var(--input-bg); color: var(--text);
     text-align: center;
   }
+  /* Leeres Wdh.-Feld sichtbar als "hier fehlt etwas" markieren — der graue Platzhalter
+     hatte zuvor wie ein bereits eingetragener Wert gewirkt. */
+  .set-input.rep-input:placeholder-shown { border-style: dashed; border-color: var(--akzent); }
   .set-check {
     width: 34px; height: 34px; border-radius: var(--radius); border: 1px solid var(--linie);
     background: var(--bg-karte); color: var(--text-grau); font-size: 16px; cursor: pointer;
@@ -209,7 +213,7 @@
 </style>
 
 <h1>Trainingsplan Hypertrophie</h1>
-<p class="app-sub">Galaxy Fitness · 4×/Woche Upper/Lower-Split · v0.4</p>
+<p class="app-sub">Galaxy Fitness · 4×/Woche Upper/Lower-Split · v0.5</p>
 
 <div class="tabs" id="tabs"></div>
 <p class="day-focus" id="dayFocus"></p>
@@ -269,6 +273,7 @@
     { id: "front-shoulder-left",  shape: "circ", cx: 32,  cy: 54, r: 10 },
     { id: "biceps-right",         shape: "rect", x: 97, y: 62,  w: 24, h: 38, rx: 9 },
     { id: "biceps-left",          shape: "rect", x: 19, y: 62,  w: 24, h: 38, rx: 9 },
+    { id: "abs",                  shape: "rect", x: 55, y: 76,  w: 30, h: 40, rx: 7 },
     { id: "quad-right",           shape: "rect", x: 79, y: 132, w: 17, h: 58, rx: 8 },
     { id: "quad-left",            shape: "rect", x: 44, y: 132, w: 17, h: 58, rx: 8 },
     { id: "adductors",            shape: "rect", x: 61, y: 136, w: 18, h: 48, rx: 8 }
@@ -376,7 +381,16 @@
             "Volle Dehnung hinter dem Kopf zulassen — das ist bei dieser Variante der Hauptreiz.",
             "Nur den Unterarm bewegen, Oberarm bleibt ruhig."
           ],
-          video: "https://www.youtube.com/watch?v=HsV4wDUxdow", videoLabel: "Jeff Nippard: wissenschaftsbasiertes Arm-Workout" }
+          video: "https://www.youtube.com/watch?v=HsV4wDUxdow", videoLabel: "Jeff Nippard: wissenschaftsbasiertes Arm-Workout" },
+        { id: "ua8", name: "Bauchmaschine (Crunch)", reps: "10–15", rir: "0–1", restSec: 60, restLabel: "60 Sek.", sets: 2, optional: true,
+          muscle: { view: "front", primary: ["abs"], secondary: [] },
+          cues: [
+            "Sitzhöhe so einstellen, dass der Drehpunkt der Maschine etwa auf Höhe des unteren Brustbeins liegt.",
+            "Bewegung kommt aus dem Zusammenrollen der Wirbelsäule, nicht aus dem Hüftbeugen — Brustkorb Richtung Becken einrollen.",
+            "Nicht an den Griffen ziehen; die Arme halten nur, gearbeitet wird mit dem Bauch.",
+            "Kontrolliert zurück bis zur leichten Dehnung, ohne die Gewichte abzusetzen."
+          ],
+          video: "", videoLabel: "" }
       ]
     },
     lowerA: {
@@ -459,12 +473,13 @@
           ],
           offenNote: "Offen: kein einzeln verifiziertes Kurzvideo gefunden — steckt in einem 15-Min.-Sammelvideo ohne passende Kapitelmarke. Im Studio zeigen lassen.",
           video: "", videoLabel: "" },
-        { id: "ub3", name: "Klimmzug bzw. Latzug breit, Obergriff", reps: "6–10", rir: "1–2", restSec: 90, restLabel: "90 Sek.", sets: 3,
+        { id: "ub3", name: "Klimmzug, Obergriff", reps: "6–10", rir: "1–2", restSec: 90, restLabel: "90 Sek.", sets: 3, bodyweight: true,
           muscle: { view: "back", primary: ["lats-left", "lats-right"], secondary: ["midback"] },
           cues: [
             "Griff etwas breiter als Schulterbreite, Handflächen nach vorne.",
             "Schulterblätter zuerst aktiv nach unten ziehen, erst danach den Zug mit den Armen fortsetzen.",
-            "Ellbogen ca. 10–15° nach außen geführt Richtung Hüfte ziehen."
+            "Ellbogen ca. 10–15° nach außen geführt Richtung Hüfte ziehen.",
+            "Fortschritt läuft hier über Wiederholungen — erst wenn 3×10 sauber stehen, Zusatzgewicht am Gürtel ergänzen und im kg-Feld eintragen."
           ],
           video: "https://www.youtube.com/watch?v=SpJwyAbwDBk&t=60s", videoLabel: "Vertikales Ziehen: Klimmzüge ab 1:00 — Jeff Nippard (Kapitelmarke, kein eigenes Video)" },
         { id: "ub4", name: "Face Pull, Kabel", reps: "12–15", rir: "1–2", restSec: 60, restLabel: "60 Sek.", sets: 3,
@@ -483,21 +498,34 @@
           ],
           offenNote: "Offen: kein einzelnes Vollvideo mit sicher verifizierter URL gefunden — im Studio zeigen lassen oder Kanal durchsuchen.",
           video: "https://www.youtube.com/@JeffNippard", videoLabel: "Jeff Nippard — Kanal (Suche: „cable fly“)" },
-        { id: "ub6", name: "Hammer-Curl, Kabel oder Kurzhantel", reps: "10–15", rir: "0–1", restSec: 60, restLabel: "60 Sek.", sets: 2, optional: true,
+        { id: "ub6", name: "Hammer-Curl, Kabel mit Seil", reps: "10–15", rir: "0–1", restSec: 60, restLabel: "60 Sek.", sets: 2, optional: true,
           muscle: { view: "front", primary: ["biceps-left", "biceps-right"], secondary: [] },
           cues: [
             "Handflächen zeigen zueinander (neutraler Griff) und bleiben während der ganzen Bewegung in dieser Position.",
-            "Ellbogen am Körper fixiert, kein Schwung aus der Schulter."
+            "Ellbogen am Körper fixiert, kein Schwung aus der Schulter.",
+            "Kabel statt Kurzhantel: die Spannung bleibt oben erhalten, während sie bei der Kurzhantel dort fast wegfällt. Ist der Turm belegt, ist die Kurzhantel ein guter Ersatz."
           ],
           video: "https://www.youtube.com/watch?v=HsV4wDUxdow", videoLabel: "Jeff Nippard: wissenschaftsbasiertes Arm-Workout" },
-        { id: "ub7", name: "Dips Maschine oder enger Griff", reps: "8–12", rir: "0–1", restSec: 60, restLabel: "60 Sek.", sets: 2, optional: true,
+        // Neue ID (nicht ub7): unter ub7 liegt die Historie der ersetzten Dips-Maschine.
+        // Gleiche ID wuerde die Dips-Gewichte faelschlich als Trizepsdruecken-Verlauf ausweisen.
+        { id: "ub9", name: "Trizepsdrücken am Kabelzug", reps: "10–15", rir: "0–1", restSec: 60, restLabel: "60 Sek.", sets: 2, optional: true,
           muscle: { view: "back", primary: ["triceps-left", "triceps-right"], secondary: [] },
           cues: [
-            "Oberkörper aufrecht halten für mehr Trizeps-Fokus (Vorlehnen verschiebt Richtung Brust).",
-            "Ellbogen eng am Körper führen, nicht nach außen abspreizen.",
-            "Nur so tief absenken, wie die Schulter beschwerdefrei mitgeht."
+            "Ellbogen eng am Körper fixiert und dort lassen — nur der Unterarm bewegt sich.",
+            "Ellbogen nach hinten statt nach außen abspreizen, sonst übernimmt die Schulter.",
+            "Oberkörper aufrecht, minimal vorgelehnt; nicht mit dem Rumpf nachdrücken.",
+            "Unten kurz die Streckung halten, dann kontrolliert zurückführen."
           ],
-          video: "https://www.youtube.com/watch?v=HsV4wDUxdow", videoLabel: "Jeff Nippard: wissenschaftsbasiertes Arm-Workout" }
+          video: "https://www.youtube.com/watch?v=HsV4wDUxdow", videoLabel: "Jeff Nippard: wissenschaftsbasiertes Arm-Workout" },
+        { id: "ub8", name: "Hyperextension (unterer Rücken)", reps: "12–15", rir: "1–2", restSec: 60, restLabel: "60 Sek.", sets: 2, optional: true, bodyweight: true,
+          muscle: { view: "back", primary: ["lowerback"], secondary: ["glutes", "hamstrings-left", "hamstrings-right"] },
+          cues: [
+            "Polster knapp unterhalb der Hüftknochen einstellen, damit die Hüfte frei beugen kann.",
+            "Bewegung aus der Hüfte einleiten, Rücken bleibt lang — nicht im unteren Rücken einknicken.",
+            "Nur bis zur Geraden aufrichten, nicht ins Hohlkreuz überstrecken.",
+            "Zuerst mit Körpergewicht; später eine Hantelscheibe vor der Brust halten und im kg-Feld eintragen."
+          ],
+          video: "", videoLabel: "" }
       ]
     },
     lowerB: {
@@ -665,7 +693,7 @@
     watchCard.style.display = "";
     var day = PLAN[currentDay];
     dayFocusEl.textContent = day.focus;
-    dayKernEl.textContent = "Kernprogramm ≈ 55 Min. · optionaler Zusatz bis 90 Min.";
+    dayKernEl.textContent = "Kernprogramm ≈ 55 Min. · optionaler Zusatz nach Wahl, nicht alles nötig.";
   }
 
   function renderExercises() {
@@ -777,6 +805,17 @@
     return card;
   }
 
+  // Einheitliche Satz-Darstellung fuer Verlauf, Auswertung und Report.
+  // Koerpergewichts-Uebungen (Klimmzug, Hyperextension) haben oft kein kg — dann zaehlen nur die Wdh.
+  function fmtSatz(s) {
+    if (!s) return "–";
+    var w = (s.w || "").trim(), r = (s.r || "").trim();
+    if (w && r) return w + " × " + r;
+    if (w) return w;
+    if (r) return r + " Wdh.";
+    return "–";
+  }
+
   function renderVerlauf(ex) {
     var box = document.createElement("div");
     box.className = "verlauf-box" + (openVerlaufExId === ex.id ? " show" : "");
@@ -796,9 +835,7 @@
       var dateDisp = parts[2] + "." + parts[1] + ".";
       var row = "<tr><td>" + dateDisp + "</td>";
       for (var i = 0; i < ex.sets; i++) {
-        var s = entry.sets[i] || { w: "", r: "" };
-        var cell = (s.w || "–") + (s.r ? " × " + s.r : "");
-        row += "<td>" + cell + "</td>";
+        row += "<td>" + fmtSatz(entry.sets[i]) + "</td>";
       }
       row += "</tr>";
       table.innerHTML += row;
@@ -893,20 +930,29 @@
         var hist = store.history[ex.id].slice().sort(function (a, b) { return a.date < b.date ? -1 : 1; });
         hist.forEach(function (entry) { allDates.push(entry.date); });
 
+        // Kennzahl je Uebung: normal das schwerste Gewicht. Liegt gar kein Gewicht vor
+        // (Klimmzug, Hyperextension), traegt die Wiederholungszahl den Fortschritt.
+        var hatGewicht = hist.some(function (entry) {
+          return entry.sets.some(function (s) { return s && !isNaN(parseFloat((s.w || "").replace(",", "."))); });
+        });
+        var einheit = hatGewicht ? " kg" : " Wdh.";
+
         var points = hist.map(function (entry) {
-          var maxW = 0, maxWDisp = "";
+          var best = 0, bestDisp = "";
           entry.sets.forEach(function (s) {
-            var n = parseFloat((s.w || "").replace(",", "."));
-            if (!isNaN(n) && n >= maxW) { maxW = n; maxWDisp = s.w; }
+            if (!s) return;
+            var roh = hatGewicht ? s.w : s.r;
+            var n = parseFloat((roh || "").replace(",", "."));
+            if (!isNaN(n) && n >= best) { best = n; bestDisp = roh; }
           });
-          return { date: entry.date, w: maxW, wDisp: maxWDisp };
+          return { date: entry.date, w: best, wDisp: bestDisp };
         }).filter(function (p) { return p.w > 0; });
 
         var deltaHtml = "";
         if (points.length >= 2) {
           var first = points[0], last = points[points.length - 1];
           var delta = last.w - first.w;
-          var deltaDisp = (delta > 0 ? "+" : "") + (Math.round(delta * 10) / 10) + " kg";
+          var deltaDisp = (delta > 0 ? "+" : "") + (Math.round(delta * 10) / 10) + einheit;
           deltaHtml = '<span class="rep-delta ' + (delta > 0 ? "up" : (delta < 0 ? "down" : "")) + '">' + deltaDisp + " seit " + fmtDateRep(first.date) + '</span>';
         }
 
@@ -915,10 +961,10 @@
           var pct = Math.max(6, Math.round((p.w / maxAll) * 100));
           return '<div class="rep-bar-row"><span class="rep-bar-date">' + fmtDateRep(p.date) + '</span>' +
             '<div class="rep-bar-track"><div class="rep-bar-fill" style="width:' + pct + '%"></div></div>' +
-            '<span class="rep-bar-val">' + p.wDisp + ' kg</span></div>';
+            '<span class="rep-bar-val">' + p.wDisp + einheit + '</span></div>';
         }).join("");
 
-        exerciseSections += '<div class="rep-card"><div class="rep-ex-head"><span class="rep-ex-name">' + ex.name + '</span>' + deltaHtml + '</div>' + (bars || '<p class="rep-empty">Keine Gewichtsdaten.</p>') + '</div>';
+        exerciseSections += '<div class="rep-card"><div class="rep-ex-head"><span class="rep-ex-name">' + ex.name + '</span>' + deltaHtml + '</div>' + (bars || '<p class="rep-empty">Keine Werte erfasst.</p>') + '</div>';
       });
     });
 
@@ -974,9 +1020,7 @@
           var dateDisp = parts[2] + "." + parts[1] + ".";
           var row = "<tr><td>" + dateDisp + "</td>";
           for (var i = 0; i < ex.sets; i++) {
-            var s = entry.sets[i] || { w: "", r: "" };
-            var cell = (s.w || "–") + (s.r ? " × " + s.r : "");
-            row += "<td>" + cell + "</td>";
+            row += "<td>" + fmtSatz(entry.sets[i]) + "</td>";
           }
           row += "</tr>";
           rows += row;
@@ -1115,7 +1159,9 @@
     var table = document.createElement("table");
     table.className = "sets-table";
     var thead = document.createElement("tr");
-    thead.innerHTML = "<th>Satz</th><th>kg</th><th>Wdh.</th><th></th>";
+    // Zielbereich gehoert in den Kopf, nicht in den Platzhalter: als grauer Platzhalter im leeren Feld
+    // sah "8-12" wie ein bereits eingetragener Wert aus, deshalb wurden nie Wiederholungen erfasst.
+    thead.innerHTML = "<th>Satz</th><th>" + (ex.bodyweight ? "kg Zusatz" : "kg") + "</th><th>Wdh. <span class=\"th-ziel\">Ziel " + ex.reps + "</span></th><th></th>";
     table.appendChild(thead);
 
     for (var i = 0; i < ex.sets; i++) {
@@ -1133,7 +1179,7 @@
         wInput.className = "set-input";
         wInput.type = "text";
         wInput.inputMode = "decimal";
-        wInput.placeholder = idx === 0 ? (lastW || "kg") : "kg";
+        wInput.placeholder = ex.bodyweight ? "–" : (idx === 0 ? (lastW || "kg") : "kg");
         wInput.value = arr[idx].w || "";
         wInput.addEventListener("input", function () {
           arr[idx].w = wInput.value;
@@ -1155,10 +1201,10 @@
 
         var tdR = document.createElement("td");
         var repInput = document.createElement("input");
-        repInput.className = "set-input";
+        repInput.className = "set-input rep-input";
         repInput.type = "text";
         repInput.inputMode = "numeric";
-        repInput.placeholder = ex.reps;
+        repInput.placeholder = "";
         repInput.value = arr[idx].r || "";
         repInput.setAttribute("data-field", "r");
         repInput.addEventListener("input", function () {
