@@ -101,7 +101,7 @@
     border-radius: var(--radius); padding: 1px 5px; margin-left: 6px; vertical-align: middle;
     text-transform: uppercase; letter-spacing: .03em;
   }
-  .ex-meta { font-size: 12.5px; color: var(--text-grau); margin-top: 2px; }
+  .ex-meta { font-size: 13.5px; color: var(--text-grau); margin-top: 2px; }
   .ex-chevron { font-size: 13px; color: var(--text-grau); flex-shrink: 0; transition: transform .15s ease; }
   .ex-card.open .ex-chevron { transform: rotate(90deg); }
   .ex-progress-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--linie); }
@@ -125,6 +125,13 @@
   }
   .offen-note { font-size: 12px; color: var(--text-grau); font-style: italic; margin: -4px 0 10px; }
 
+  .note-field { margin: 0 0 12px; }
+  .note-field label { display: block; font-size: 11px; color: var(--text-grau); margin-bottom: 3px; }
+  .note-input {
+    width: 100%; font-family: var(--font-sans); font-size: 13.5px; padding: 7px 9px;
+    border: 1px solid var(--linie); border-radius: var(--radius); background: var(--input-bg); color: var(--text);
+  }
+
   .sets-table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
   .sets-table th {
     font-size: 11px; font-weight: 700; color: var(--text-grau); text-transform: uppercase; letter-spacing: .03em;
@@ -133,7 +140,7 @@
   .sets-table td { padding: 5px 4px; vertical-align: middle; }
   .set-row.done { background: var(--erledigt-bg); }
   .set-num { font-size: 13px; font-weight: 700; color: var(--text-grau); width: 22px; }
-  .sets-table th .th-ziel { font-weight: 400; text-transform: none; letter-spacing: 0; opacity: .75; }
+  .sets-table th .th-ziel { font-weight: 700; text-transform: none; letter-spacing: 0; font-size: 12.5px; opacity: .9; }
   .set-input {
     width: 100%; max-width: 62px; font-family: var(--font-sans); font-size: 15px; padding: 6px 4px;
     border: 1px solid var(--linie); border-radius: var(--radius); background: var(--input-bg); color: var(--text);
@@ -199,6 +206,15 @@
   .watch-saved-note { font-size: 12px; color: var(--erledigt-text); margin-top: 6px; display: none; }
   .watch-saved-note.show { display: block; }
 
+  /* Erinnerung, sobald das Kernprogramm eines Tages vollstaendig abgehakt ist —
+     der Moment, in dem ein Backup faellig ist und noch niemand die App verlassen hat. */
+  .backup-hinweis {
+    background: var(--bg-flaeche); border: 1px solid var(--akzent); border-left-width: 3px;
+    border-radius: var(--radius); padding: 12px 14px; margin: 16px 0 6px;
+  }
+  .backup-hinweis-titel { font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 3px; }
+  .backup-hinweis-text { font-size: 12.5px; color: var(--text-grau); margin-bottom: 10px; }
+
   .ausw-card { background: var(--bg-karte); border: 1px solid var(--linie); border-radius: var(--radius); margin-bottom: 10px; padding: 12px 14px; }
   .ausw-ex-name { font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
   .ausw-empty { font-size: 13px; color: var(--text-grau); font-style: italic; }
@@ -213,7 +229,7 @@
 </style>
 
 <h1>Trainingsplan Hypertrophie</h1>
-<p class="app-sub">Galaxy Fitness · 4×/Woche Upper/Lower-Split · v0.5</p>
+<p class="app-sub">Galaxy Fitness · 4×/Woche Upper/Lower-Split · v0.6</p>
 
 <div class="tabs" id="tabs"></div>
 <p class="day-focus" id="dayFocus"></p>
@@ -591,8 +607,9 @@
       s.lastWeight = s.lastWeight || {};
       s.history = s.history || {};
       s.workoutLog = s.workoutLog || {};
+      s.notes = s.notes || {};  // freier Text je Uebung, z.B. wo die Maschine im Studio steht
       return s;
-    } catch (e) { return { todayDate: "", checked: {}, todaySets: {}, lastWeight: {}, history: {}, workoutLog: {} }; }
+    } catch (e) { return { todayDate: "", checked: {}, todaySets: {}, lastWeight: {}, history: {}, workoutLog: {}, notes: {} }; }
   }
   function saveStore(store) {
     try { localStorage.setItem(STORE_KEY, JSON.stringify(store)); } catch (e) {}
@@ -656,6 +673,8 @@
   var currentDay = DAY_ORDER[0];
   var openExId = null;
   var openVerlaufExId = null;
+  var restoreHinweis = "";  // ueberlebt den Neuaufbau der Auswertung nach einer Wiederherstellung
+  var backupSofortErzeugen = false;  // gesetzt vom Erinnerungs-Hinweis nach dem letzten Satz
 
   var watchCard = document.getElementById("watchCard");
   var tabsEl = document.getElementById("tabs");
@@ -716,6 +735,40 @@
       exListEl.appendChild(optLabel);
       optional.forEach(function (ex) { exListEl.appendChild(renderExCard(ex)); });
     }
+
+    // Kernprogramm komplett abgehakt -> an die Sicherung erinnern, solange die App noch offen ist
+    var kernFertig = core.length > 0 && core.every(function (ex) { return doneCount(ex) === ex.sets; });
+    if (kernFertig && store.backupErinnert !== todayStr()) {
+      exListEl.appendChild(renderBackupHinweis());
+    }
+  }
+
+  function renderBackupHinweis() {
+    var box = document.createElement("div");
+    box.className = "backup-hinweis";
+    box.innerHTML =
+      '<div class="backup-hinweis-titel">Training abgeschlossen — Daten sichern?</div>' +
+      '<div class="backup-hinweis-text">Deine Werte liegen nur im Speicher dieses Browsers. Ein Backup-Code dauert zehn Sekunden und schützt gegen Verlust.</div>' +
+      '<div class="ex-actions">' +
+        '<button class="btn primary" id="hinweisBackupBtn">Backup-Code erzeugen</button>' +
+        '<button class="btn" id="hinweisSpaeterBtn">Heute nicht</button>' +
+      '</div>';
+    box.querySelector("#hinweisBackupBtn").addEventListener("click", function () {
+      store.backupErinnert = todayStr();
+      saveStore(store);
+      backupSofortErzeugen = true;      // renderAuswertung fuellt das Feld gleich mit
+      currentDay = "auswertung";
+      openExId = null; openVerlaufExId = null;
+      renderAll();
+      var feld = document.getElementById("backupOut");
+      if (feld && feld.scrollIntoView) feld.scrollIntoView({ block: "center" });
+    });
+    box.querySelector("#hinweisSpaeterBtn").addEventListener("click", function () {
+      store.backupErinnert = todayStr();
+      saveStore(store);
+      renderAll();
+    });
+    return box;
   }
 
   function renderExCard(ex) {
@@ -778,6 +831,21 @@
       a.textContent = "▶ Technik-Video";
       body.appendChild(a);
     }
+
+    var noteField = document.createElement("div");
+    noteField.className = "note-field";
+    noteField.innerHTML = '<label>Notiz (z. B. wo die Maschine steht)</label>';
+    var noteInput = document.createElement("input");
+    noteInput.type = "text";
+    noteInput.className = "note-input";
+    noteInput.placeholder = "z. B. hintere Reihe, Kraftraum links";
+    noteInput.value = store.notes[ex.id] || "";
+    noteInput.addEventListener("input", function () {
+      store.notes[ex.id] = noteInput.value;
+      saveStore(store);
+    });
+    noteField.appendChild(noteInput);
+    body.appendChild(noteField);
 
     body.appendChild(renderSetsTable(ex));
 
@@ -1075,11 +1143,14 @@
       '</div>';
     exListEl.appendChild(exportCard);
 
+    // Deutsches Datum mit Punkten statt ISO mit Bindestrichen: iOS kuerzte den Namen
+    // am Bindestrich, sodass aus "Trainingsdaten 2026-08-29.csv" ein irrefuehrendes
+    // "Trainingsdaten 2027.csv" wurde (aufgefallen 29.08.2026).
     exportCard.querySelector("#exportCsvBtn").addEventListener("click", function () {
-      downloadBlob("Trainingsdaten " + todayStr() + ".csv", String.fromCharCode(65279) + buildTrainingCSV(), "text/csv;charset=utf-8");
+      downloadBlob("Trainingsdaten " + todayDisplay() + ".csv", String.fromCharCode(65279) + buildTrainingCSV(), "text/csv;charset=utf-8");
     });
     exportCard.querySelector("#exportReportBtn").addEventListener("click", function () {
-      downloadBlob("Trainingsbericht " + todayStr() + ".html", buildReportHTML(), "text/html;charset=utf-8");
+      downloadBlob("Trainingsbericht " + todayDisplay() + ".html", buildReportHTML(), "text/html;charset=utf-8");
     });
 
     // ---- Daten-Sicherung ----
@@ -1145,12 +1216,39 @@
       store = loadStore(); // Basisstruktur
       Object.keys(parsed).forEach(function (k) { store[k] = parsed[k]; });
       saveStore(store);
-      backupRestoreNote.textContent = "Wiederhergestellt.";
-      backupRestoreNote.className = "backup-note ok";
+
+      // Kurzbericht, was angekommen ist — eine blosse Erfolgsmeldung laesst offen,
+      // ob der Code vollstaendig war.
+      var anzTage = {}, anzSaetze = 0;
+      Object.keys(store.history || {}).forEach(function (exId) {
+        (store.history[exId] || []).forEach(function (e) {
+          anzTage[e.date] = true;
+          anzSaetze += (e.sets || []).length;
+        });
+      });
+      restoreHinweis = "Wiederhergestellt: " + Object.keys(anzTage).length + " Trainingstage, " +
+        anzSaetze + " Sätze, " + Object.keys(store.workoutLog || {}).length + " Watch-Einträge.";
+
+      // renderAll() baut die Auswertung neu auf und wuerde eine hier gesetzte Meldung
+      // sofort wieder entfernen — deshalb liegt sie in restoreHinweis und wird beim
+      // Neuaufbau eingesetzt (Fehler aufgefallen im Restore-Test 29.08.2026).
       renderAll();
       loadTodayWatch();
       renderWatchHistory();
     });
+
+    if (restoreHinweis) {
+      backupRestoreNote.textContent = restoreHinweis;
+      backupRestoreNote.className = "backup-note ok";
+    }
+
+    // Aus dem Erinnerungs-Hinweis gekommen: Code gleich hinlegen, statt noch einen Klick zu verlangen
+    if (backupSofortErzeugen) {
+      backupSofortErzeugen = false;
+      backupOut.value = JSON.stringify(store);
+      backupGenNote.textContent = "Code erzeugt — jetzt kopieren und sichern.";
+      backupGenNote.className = "backup-note ok";
+    }
   }
 
   function renderSetsTable(ex) {
